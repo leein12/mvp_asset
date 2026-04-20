@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+{# id 모드: hidden + 검색어, 선택 시 id·라벨 반영 #}
+{% macro asset_id_suggest_combo(rid, suggest_url, role, hidden_field, hidden_value, text_value, placeholder) %}
+<div class="asset-suggest-combo" data-suggest-url="{{ suggest_url }}"{% if role %} data-suggest-role="{{ role }}"{% endif %}>
+    <input type="hidden" class="{% if rid == 'new' %}new-field {% endif %}asset-suggest-hidden" {% if rid == 'new' %}data-field="{{ hidden_field }}"{% else %}name="f_{{ rid }}_{{ hidden_field }}"{% endif %} value="{% if rid != 'new' %}{{ hidden_value or '' }}{% endif %}">
+    <input type="text" class="cell-input mapping-flat-input asset-suggest-search" autocomplete="off" placeholder="{{ placeholder }}" value="{% if rid != 'new' %}{{ text_value or '' }}{% endif %}">
+    <ul class="asset-system-suggest" hidden></ul>
+</div>
+{% endmacro %}
+
+{% macro asset_system_combobox(rid, drow) %}
+{{ asset_id_suggest_combo(rid, "/api/asset-list/system-suggest", "", "a_id", drow.get("a_id"), drow.get("map_system_name"), "시스템명 입력 후 후보에서 선택") }}
+{% endmacro %}
+
+{% macro asset_b_role_combobox(rid, role, hidden_field, text_value, drow, placeholder="성명 입력 후 후보에서 선택") %}
+{{ asset_id_suggest_combo(rid, "/api/asset-list/b-suggest", role, hidden_field, drow.get(hidden_field), text_value, placeholder) }}
+{% endmacro %}
+
+{% macro asset_hostname_combobox(rid, drow) %}
+<div class="asset-suggest-combo" data-suggest-url="/api/asset-list/hostname-suggest" data-text-only="1" data-fill-c-fields="1">
+    <input type="text" class="cell-input mapping-flat-input asset-suggest-search{% if rid == 'new' %} new-field{% endif %}" autocomplete="off" placeholder="자산 관리(C) Hostname 입력·LIKE 검색 후 선택" maxlength="255" {% if rid == 'new' %}data-field="hostname"{% else %}name="f_{{ rid }}_hostname"{% endif %} value="{{ drow.get('map_hostname') or '' }}">
+    <ul class="asset-system-suggest" hidden></ul>
+</div>
+{% endmacro %}
+
+{% macro asset_text_field(rid, form_field, placeholder, value, suggests, dl_key) %}
+    <datalist id="al-dl-{{ rid }}-{{ dl_key }}">
+        {% for s in suggests %}
+        <option value="{{ s }}">
+        {% endfor %}
+    </datalist>
+    <input type="text" class="cell-input mapping-flat-input{% if rid == 'new' %} new-field{% endif %}" list="al-dl-{{ rid }}-{{ dl_key }}" {% if rid == 'new' %}data-field="{{ form_field }}"{% else %}name="f_{{ rid }}_{{ form_field }}"{% endif %} placeholder="{{ placeholder }}" maxlength="255" value="{{ value or '' }}">
+{% endmacro %}
+
+{% macro asset_row_columns(rid, drow) %}
+{% for col in columns %}
+    <td class="{% if col.key == 'asset_management_no' %}col-asset-mgmt-no cell-text{% else %}mapping-flat-td{% endif %}">
+        {% if col.key == 'asset_management_no' %}
+            {% if rid == 'new' %}<span class="muted">—</span>{% else %}{{ drow.get(col.key) }}{% endif %}
+        {% elif col.key == 'map_system_name' %}
+            {{ asset_system_combobox(rid, drow) }}
+        {% elif col.key == 'map_hyup' %}
+            {{ asset_b_role_combobox(rid, 'hyup', 'b_hyup_id', drow.get('map_hyup'), drow, "담당자 관리: 역할이 현업인 성명을 입력·검색 후 선택") }}
+        {% elif col.key == 'map_dt' %}
+            {{ asset_b_role_combobox(rid, 'dt', 'b_dt_id', drow.get('map_dt'), drow) }}
+        {% elif col.key == 'map_ito' %}
+            {{ asset_b_role_combobox(rid, 'ito', 'b_ito_id', drow.get('map_ito'), drow) }}
+        {% elif col.key == 'map_ops' %}
+            {{ asset_b_role_combobox(rid, 'ops', 'b_ops_id', drow.get('map_ops'), drow) }}
+        {% elif col.key == 'map_hostname' %}
+            {{ asset_hostname_combobox(rid, drow) }}
+        {% elif col.key == 'map_server_cls' %}
+            {{ asset_text_field(rid, 'server_cls', '서버분류', drow.get('map_server_cls'), alist_ctx.c_suggest_server_cls, 'sc') }}
+        {% elif col.key == 'map_ip' %}
+            {{ asset_text_field(rid, 'ip', 'IP', drow.get('map_ip'), alist_ctx.c_suggest_ip, 'ip') }}
+        {% elif col.key == 'map_port' %}
+            {{ asset_text_field(rid, 'port', 'Port', drow.get('map_port'), alist_ctx.c_suggest_port, 'pt') }}
+        {% elif col.key == 'map_server_kind' %}
+            {{ asset_text_field(rid, 'server_kind', '서버 구분', drow.get('map_server_kind'), alist_ctx.c_suggest_server_kind, 'sk') }}
+        {% endif %}
+    </td>
+{% endfor %}
+{% endmacro %}
+
+<section class="card list-card list-card--compact list-card--body-scroll">
+    <div class="list-card-sticky-chrome">
+        <div class="list-card-header">
+            <div class="list-card-header-left">
+                <form method="get" action="/asset-list" class="inline-form tight">
+                    <input type="hidden" name="page" value="1">
+                    <input type="hidden" name="per_page" value="{{ per_page }}">
+                    <input type="text" name="q" value="{{ query }}" placeholder="검색어">
+                    <button type="submit">검색</button>
+                </form>
+                <form method="get" action="/asset-list" class="inline-form tight">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    <input type="hidden" name="page" value="1">
+                    <label class="tight-label">페이지당
+                        <select name="per_page" onchange="this.form.submit()">
+                            <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                        </select>
+                    </label>
+                </form>
+            </div>
+            <div class="list-card-header-right">
+                <button type="button" id="alist-btn-add" class="toolbar-btn">추가</button>
+                <button type="button" id="alist-btn-save" class="toolbar-btn">저장</button>
+                <button type="button" id="alist-btn-delete" class="toolbar-btn danger-outline">삭제</button>
+            </div>
+        </div>
+
+        <div class="pager-bar">
+            {% if page > 1 %}
+            <a class="pager-link" href="/asset-list?q={{ query|uquote }}&page={{ page - 1 }}&per_page={{ per_page }}">이전</a>
+            {% endif %}
+            <span class="pager-info">{{ page }} / {{ total_pages }} (총 {{ total_rows }}건)</span>
+            {% if page < total_pages %}
+            <a class="pager-link" href="/asset-list?q={{ query|uquote }}&page={{ page + 1 }}&per_page={{ per_page }}">다음</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="table-scroll asset-list-scroll asset-list-suggest-room">
+        <table class="grid-table asset-list-grid mapping-list-wide mapping-editable-flat">
+            <thead>
+                <tr>
+                    <th class="col-check"><input type="checkbox" id="alist-check-all" title="전체 선택"></th>
+                    {% for col in columns %}
+                    <th class="asset-list-th">{{ col.label }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody id="alist-table-body">
+                {% for item in editable_rows %}
+                {% set drow = item.display %}
+                <tr class="alist-row entity-row" data-row-id="{{ drow.id }}">
+                    <td class="col-check"><input type="checkbox" class="row-check" value="{{ drow.id }}"></td>
+                    {{ asset_row_columns(drow.id, drow) }}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="list-card-footer">
+        <div></div>
+        <div class="list-card-footer-right">
+            <a class="button-link secondary excel-action-btn" href="/asset-list/export">엑셀 Export</a>
+            <button type="button" class="button-link secondary excel-action-btn" id="alist-import-trigger">엑셀 Import</button>
+            <form id="alist-import-form" method="post" action="/asset-list/import" enctype="multipart/form-data" class="hidden-file-form">
+                <input type="hidden" name="return_q" value="{{ query }}">
+                <input type="hidden" name="return_page" value="{{ page }}">
+                <input type="hidden" name="return_per_page" value="{{ per_page }}">
+                <input type="file" name="file" id="alist-import-file-input" accept=".xlsx,.xls" class="visually-hidden">
+            </form>
+        </div>
+    </div>
+</section>
+
+<template id="alist-new-row-template">
+    <tr class="alist-row entity-row new-row" data-row-id="new">
+        <td class="col-check"><input type="checkbox" class="row-check" value="new"></td>
+        {{ asset_row_columns('new', {}) }}
+    </tr>
+</template>
+
+<script>
+(function () {
+    const returnQ = {{ query|tojson }};
+    const returnPage = {{ page|int }};
+    const returnPerPage = {{ per_page|int }};
+    function appendReturnFields(form) {
+        [["return_q", returnQ], ["return_page", String(returnPage)], ["return_per_page", String(returnPerPage)]].forEach(([k, v]) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = k;
+            h.value = v;
+            form.appendChild(h);
+        });
+    }
+
+    const tableBody = document.getElementById("alist-table-body");
+    const checkAll = document.getElementById("alist-check-all");
+    const addBtn = document.getElementById("alist-btn-add");
+    const saveBtn = document.getElementById("alist-btn-save");
+    const deleteBtn = document.getElementById("alist-btn-delete");
+    const newRowTemplate = document.getElementById("alist-new-row-template");
+
+    function hideSuggest(ul) {
+        ul.hidden = true;
+        ul.innerHTML = "";
+    }
+
+    function buildSuggestUrl(wrap, q) {
+        const base = wrap.getAttribute("data-suggest-url") || "";
+        const role = wrap.getAttribute("data-suggest-role");
+        let u = base + "?q=" + encodeURIComponent(q);
+        if (role) u += "&role=" + encodeURIComponent(role);
+        return u;
+    }
+
+    const C_FILL_KEYS = ["server_cls", "ip", "port", "server_kind"];
+
+    function fillRowFieldsFromCAsset(tr, item) {
+        if (!tr || !item) return;
+        C_FILL_KEYS.forEach((fk) => {
+            const raw = item[fk];
+            const v = raw != null && raw !== undefined ? String(raw) : "";
+            const byData = tr.querySelector('input.new-field[data-field="' + fk + '"]');
+            if (byData) {
+                byData.value = v;
+                return;
+            }
+            const byName = tr.querySelector('input[name$="_' + fk + '"]');
+            if (byName) byName.value = v;
+        });
+        const rowCb = tr.querySelector(".row-check");
+        if (rowCb) rowCb.checked = true;
+    }
+
+    function wireSuggestCombo(wrap) {
+        const textOnly = wrap.getAttribute("data-text-only") === "1";
+        const hidden = textOnly ? null : wrap.querySelector(".asset-suggest-hidden");
+        const qInput = wrap.querySelector(".asset-suggest-search");
+        const ul = wrap.querySelector(".asset-system-suggest");
+        if (!qInput || !ul) return;
+
+        function runSuggest() {
+            const q = (qInput.value || "").trim();
+            if (q.length < 1) {
+                hideSuggest(ul);
+                return;
+            }
+            fetch(buildSuggestUrl(wrap, q))
+                .then((r) => r.json())
+                .then((items) => {
+                    ul.innerHTML = "";
+                    if (!items || !items.length) {
+                        hideSuggest(ul);
+                        return;
+                    }
+                    items.forEach((it) => {
+                        const li = document.createElement("li");
+                        li.textContent = it.label;
+                        li.dataset.id = String(it.id != null ? it.id : it.label);
+                        li.addEventListener("mousedown", (e) => {
+                            e.preventDefault();
+                            if (hidden) hidden.value = String(it.id);
+                            qInput.value = it.label;
+                            hideSuggest(ul);
+                            const tr = wrap.closest("tr");
+                            if (wrap.getAttribute("data-fill-c-fields") === "1") {
+                                fillRowFieldsFromCAsset(tr, it);
+                            } else if (tr) {
+                                const rowCb = tr.querySelector(".row-check");
+                                if (rowCb) rowCb.checked = true;
+                            }
+                        });
+                        ul.appendChild(li);
+                    });
+                    ul.hidden = false;
+                })
+                .catch(() => hideSuggest(ul));
+        }
+
+        qInput.addEventListener("input", () => {
+            if (hidden && hidden.value && qInput.value.trim() === "") {
+                hidden.value = "";
+            }
+            clearTimeout(wrap._alistDeb);
+            wrap._alistDeb = setTimeout(runSuggest, 280);
+        });
+        qInput.addEventListener("blur", () => {
+            setTimeout(() => hideSuggest(ul), 200);
+        });
+        qInput.addEventListener("focus", () => {
+            if ((qInput.value || "").trim().length >= 1) {
+                clearTimeout(wrap._alistDeb);
+                wrap._alistDeb = setTimeout(runSuggest, 280);
+            }
+        });
+    }
+
+    function wireAllSuggestCombos(root) {
+        root.querySelectorAll(".asset-suggest-combo").forEach(wireSuggestCombo);
+    }
+    wireAllSuggestCombos(document);
+
+    if (checkAll && tableBody) {
+        checkAll.addEventListener("change", () => {
+            tableBody.querySelectorAll(".alist-row:not(.new-row) .row-check").forEach((cb) => {
+                cb.checked = checkAll.checked;
+            });
+        });
+    }
+
+    function autoCheckAlistRowOnEdit(target) {
+        const tr = target.closest(".alist-row");
+        if (!tr || tr.classList.contains("new-row")) return;
+        if (target.matches && target.matches(".row-check")) return;
+        const cb = tr.querySelector(".row-check");
+        if (cb) cb.checked = true;
+    }
+    if (tableBody) {
+        tableBody.addEventListener("input", (e) => autoCheckAlistRowOnEdit(e.target));
+        tableBody.addEventListener("change", (e) => autoCheckAlistRowOnEdit(e.target));
+    }
+
+    function getChecked() {
+        return Array.from(tableBody.querySelectorAll(".row-check:checked"));
+    }
+
+    addBtn.addEventListener("click", () => {
+        tableBody.querySelectorAll(".alist-row.new-row").forEach((tr) => tr.remove());
+        if (checkAll) checkAll.checked = false;
+        tableBody.querySelectorAll(".alist-row:not(.new-row) .row-check").forEach((cb) => {
+            cb.checked = false;
+        });
+        const row = newRowTemplate.content.firstElementChild.cloneNode(true);
+        tableBody.prepend(row);
+        wireAllSuggestCombos(row);
+        const ncb = row.querySelector(".row-check");
+        if (ncb) ncb.checked = true;
+    });
+
+    saveBtn.addEventListener("click", () => {
+        const checked = getChecked();
+        if (!checked.length) {
+            alert("저장할 행을 선택하세요.");
+            return;
+        }
+        const newOnes = checked.filter((c) => c.value === "new");
+        const ids = checked.filter((c) => c.value !== "new").map((c) => c.value);
+        if (newOnes.length && ids.length) {
+            alert("신규 행과 기존 행을 동시에 저장할 수 없습니다.");
+            return;
+        }
+        if (newOnes.length) {
+            const newRowsToSave = Array.from(tableBody.querySelectorAll(".alist-row.new-row")).filter(
+                (tr) => tr.querySelector(".row-check")?.checked
+            );
+            if (!newRowsToSave.length) {
+                alert("저장할 신규 행을 선택하세요.");
+                return;
+            }
+            const form = document.createElement("form");
+            form.method = "post";
+            form.action = "/asset-list/batch-create";
+            appendReturnFields(form);
+            newRowsToSave.forEach((row, idx) => {
+                row.querySelectorAll(".new-field").forEach((input) => {
+                    const fk = input.dataset.field;
+                    if (!fk) return;
+                    const h = document.createElement("input");
+                    h.type = "hidden";
+                    h.name = "new_" + idx + "_" + fk;
+                    h.value = input.value;
+                    form.appendChild(h);
+                });
+            });
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
+        const form = document.createElement("form");
+        form.method = "post";
+        form.action = "/asset-list/batch-update";
+        appendReturnFields(form);
+        ids.forEach((id) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = "ids";
+            h.value = id;
+            form.appendChild(h);
+        });
+        ids.forEach((id) => {
+            const row = tableBody.querySelector('.alist-row[data-row-id="' + id + '"]');
+            if (!row) return;
+            row.querySelectorAll("[name^=\"f_" + id + "_\"]").forEach((input) => {
+                const copy = document.createElement("input");
+                copy.type = "hidden";
+                copy.name = input.name;
+                copy.value = input.value;
+                form.appendChild(copy);
+            });
+        });
+        document.body.appendChild(form);
+        form.submit();
+    });
+
+    deleteBtn.addEventListener("click", () => {
+        getChecked()
+            .filter((c) => c.value === "new")
+            .forEach((c) => c.closest(".alist-row")?.remove());
+        const checked = getChecked().filter((c) => c.value !== "new");
+        if (!checked.length) {
+            alert("삭제할 행을 선택하세요.");
+            return;
+        }
+        if (!confirm("선택한 " + checked.length + "건을 삭제할까요?")) return;
+        const form = document.createElement("form");
+        form.method = "post";
+        form.action = "/asset-list/batch-delete";
+        appendReturnFields(form);
+        checked.forEach((c) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = "ids";
+            h.value = c.value;
+            form.appendChild(h);
+        });
+        document.body.appendChild(form);
+        form.submit();
+    });
+
+    const importTrigger = document.getElementById("alist-import-trigger");
+    const importForm = document.getElementById("alist-import-form");
+    const importFile = document.getElementById("alist-import-file-input");
+    if (importTrigger && importForm && importFile) {
+        importTrigger.addEventListener("click", () => importFile.click());
+        importFile.addEventListener("change", () => {
+            if (!importFile.files.length) return;
+            importForm.submit();
+        });
+    }
+})();
+</script>
+{% endblock %}

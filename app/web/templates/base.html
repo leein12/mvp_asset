@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Asset Management MVP</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="app-layout">
+    <header class="site-header topbar">
+        <div class="site-header-inner">
+            <nav class="tab-nav site-header-tabs">
+                <a class="tab-card {{ 'active' if tab == 'ai-asset' else '' }}" href="/ai-asset">AI 자산관리</a>
+                <a class="tab-card {{ 'active' if tab == 'asset-list' else '' }}" href="/asset-list?page=1&amp;per_page=20">자산 리스트</a>
+                <a class="tab-card {{ 'active' if tab == 'A' else '' }}" href="/entities/A?page=1&amp;per_page=20">시스템 관리</a>
+                <a class="tab-card {{ 'active' if tab == 'B' else '' }}" href="/entities/B?page=1&amp;per_page=20">담당자 관리</a>
+                <a class="tab-card {{ 'active' if tab == 'C' else '' }}" href="/entities/C?page=1&amp;per_page=20">자산 관리</a>
+                <a class="tab-card {{ 'active' if tab == 'D' else '' }}" href="/entities/D?page=1&amp;per_page=20">도구 관리</a>
+                {# REMOVED_ASSET_MAPPING_TAB: 자산 매핑(/relations) UI 비활성 — 리팩터링 시 deprecated 폴더·relations.html 등 일괄 삭제 #}
+                <a class="tab-card {{ 'active' if tab == 'admin' else '' }}" href="/admin?entity=A&amp;groups_page=1&amp;groups_per_page=20&amp;codes_page=1&amp;codes_per_page=20&amp;metas_page=1&amp;metas_per_page=20&amp;panel=groups">Admin</a>
+            </nav>
+            <div class="depth-line site-breadcrumb" aria-label="현재 위치">
+                <span class="depth-part">IT Asset Management MVP</span>
+                <span class="depth-sep">-</span>
+                <span class="depth-part">{{ page_title }}</span>
+                <span class="depth-sep">-</span>
+                <span class="depth-part">목록</span>
+            </div>
+        </div>
+    </header>
+    <div class="app-main-scroll">
+        <div class="app-shell">
+            <main>
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    <script src="/static/table-resize.js" defer></script>
+</body>
+</html>

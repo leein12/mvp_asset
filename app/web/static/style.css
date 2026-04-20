@@ -1,0 +1,1183 @@
+* {
+    box-sizing: border-box;
+}
+
+body.app-layout {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    background: linear-gradient(180deg, #f6f9ff 0%, #eff4fb 100%);
+    color: #1e293b;
+}
+
+.app-main-scroll {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 20px 24px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.site-header {
+    flex-shrink: 0;
+    z-index: 200;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.site-header-inner {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 12px 18px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+}
+
+.site-breadcrumb {
+    margin-bottom: 0;
+    justify-content: flex-end;
+    flex: 0 1 auto;
+    text-align: right;
+}
+
+.site-header-tabs {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.app-shell {
+    max-width: 1500px;
+    width: 100%;
+    min-width: 0;
+    margin: 0 auto;
+    border: 1px solid #d7e1ef;
+    border-radius: 14px;
+    background: #f8fbff;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+}
+
+.topbar {
+    padding: 0;
+    border-bottom: 1px solid #d6deea;
+    background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
+}
+
+.tab-nav {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tab-card {
+    display: inline-block;
+    text-decoration: none;
+    color: #334155;
+    background: #ffffff;
+    border: 1px solid #d7e1ef;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.16s ease;
+}
+
+.tab-card:hover {
+    border-color: #8eb2f3;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+    transform: translateY(-1px);
+}
+
+.tab-card.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.app-main-scroll main {
+    min-width: 0;
+    max-width: 100%;
+    padding: 16px 20px 22px;
+}
+
+.depth-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.depth-part {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.depth-sep {
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.inline-depth .depth-part {
+    font-size: 14px;
+}
+
+.card {
+    background: #ffffff;
+    border: 1px solid #dbe5f2;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.list-card {
+    padding: 0;
+    overflow: visible;
+    position: relative;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* 엔티티·자산 리스트: 툴바·페이저·표 헤더(th)는 고정 느낌, tbody만 세로 스크롤 */
+.list-card--body-scroll {
+    display: flex;
+    flex-direction: column;
+    max-height: min(88dvh, calc(100dvh - 10rem));
+    min-height: 0;
+}
+
+.list-card--body-scroll .list-card-sticky-chrome {
+    flex: 0 0 auto;
+}
+
+.list-card--body-scroll > .table-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.list-card--body-scroll > .list-card-footer {
+    flex: 0 0 auto;
+}
+
+.list-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fbfcfe;
+}
+
+.list-card-header-left,
+.list-card-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.list-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border-top: 1px solid #e2e8f0;
+    background: #fbfcfe;
+}
+
+.list-card-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.inline-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.inline-form.tight {
+    gap: 6px;
+}
+
+.inline-form.wrap {
+    flex-wrap: wrap;
+}
+
+.tight-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.flex-grow {
+    flex: 1 1 200px;
+    min-width: 160px;
+}
+
+.pager-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 8px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
+}
+
+.pager-bar--bottom {
+    border-bottom: none;
+    border-top: 1px solid #e2e8f0;
+    justify-content: center;
+    padding: 12px 14px;
+}
+
+.pager-nav {
+    gap: 10px 14px;
+}
+
+.pager-pages {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.pager-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.pager-num:hover {
+    background: #eff6ff;
+    text-decoration: none;
+}
+
+.pager-num.is-current {
+    background: #1d4ed8;
+    color: #fff;
+    border-color: #1d4ed8;
+    cursor: default;
+    pointer-events: none;
+}
+
+.pager-gap {
+    color: #94a3b8;
+    font-weight: 600;
+    padding: 0 2px;
+    user-select: none;
+}
+
+.admin-shell {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 14px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.admin-sidebar {
+    flex: 0 0 240px;
+    padding: 14px 16px;
+    margin-bottom: 0;
+}
+
+.admin-sidebar-head {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin: 0 0 12px;
+}
+
+.admin-tree-nav {
+    font-size: 14px;
+}
+
+.admin-tree-rail {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.admin-tree-section {
+    position: relative;
+    margin: 0;
+    padding: 0 0 14px 14px;
+}
+
+.admin-tree-section + .admin-tree-section {
+    padding-top: 12px;
+    border-top: 1px solid #e8eef5;
+}
+
+.admin-tree-section::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.25rem;
+    bottom: 0.35rem;
+    width: 2px;
+    background: #e2e8f0;
+    border-radius: 2px;
+}
+
+.admin-tree-section.branch-active::before {
+    background: #93c5fd;
+}
+
+.admin-tree-section-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin: 0 0 8px 2px;
+    line-height: 1.3;
+}
+
+.admin-tree-section.branch-active > .admin-tree-section-label {
+    color: #1d4ed8;
+}
+
+.admin-tree-children {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 2px 12px;
+    border-left: 2px solid #e2e8f0;
+}
+
+.admin-tree-section.branch-active .admin-tree-children {
+    border-left-color: #93c5fd;
+}
+
+.admin-tree-children li {
+    margin: 0;
+}
+
+.admin-tree-children li + li {
+    margin-top: 2px;
+}
+
+.admin-tree-row {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: #1e293b;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.35;
+    border: 1px solid transparent;
+}
+
+.admin-tree-row:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.admin-tree-row.is-active {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.admin-tree-sublink {
+    font-weight: 500;
+}
+
+a.admin-tree-heading-link {
+    text-decoration: none;
+    color: #334155;
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin: -6px -8px 8px -6px;
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+a.admin-tree-heading-link:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.admin-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.admin-panel-card {
+    margin-bottom: 0;
+}
+
+.admin-panel-body {
+    padding: 14px 16px;
+}
+
+/* Admin·엔티티/자산 리스트: 페이지당 20행 기준 내부 스크롤 완화·리스트 상하 여백 최소(4px 단위) */
+.list-card--compact .list-card-header,
+.admin-panel-card .list-card-header {
+    padding: 8px 10px;
+}
+
+.list-card--compact .list-card-footer,
+.admin-panel-card .list-card-footer {
+    padding: 4px 10px;
+}
+
+.list-card--compact .pager-bar,
+.admin-panel-card .pager-bar {
+    padding: 4px 10px;
+}
+
+.list-card--compact .pager-bar--bottom,
+.admin-panel-card .pager-bar--bottom {
+    padding: 4px 10px;
+}
+
+.list-card--compact:not(.list-card--body-scroll) .table-scroll,
+.admin-panel-card .table-scroll {
+    max-height: none;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.list-card--compact .entity-list-grid .cell-input:not([type="checkbox"]):not([type="radio"]),
+.admin-panel-card .grid-table .cell-input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 22px;
+}
+
+.pager-link {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.pager-link:hover {
+    text-decoration: underline;
+}
+
+.pager-info {
+    color: #475569;
+    font-size: 14px;
+}
+
+.table-scroll {
+    max-height: min(72vh, 680px);
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    width: 100%;
+    overscroll-behavior: contain;
+}
+
+.asset-list-scroll {
+    max-height: min(72vh, 680px);
+}
+
+.list-card--body-scroll .asset-list-scroll {
+    max-height: none;
+}
+
+/* 자산 리스트: 시스템명 후보(absolute)가 잘리지 않도록 스크롤 영역 하단 여백 */
+.asset-list-suggest-room {
+    padding-bottom: min(16rem, 42vh);
+    box-sizing: border-box;
+}
+
+.asset-list-grid {
+    width: max-content;
+}
+
+th.asset-list-th {
+    white-space: nowrap;
+    max-width: min(22rem, 45vw);
+    overflow-wrap: anywhere;
+}
+
+.grid-table {
+    table-layout: auto;
+    width: max-content;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.grid-table th,
+.grid-table td {
+    border: 1px solid #94a3b8;
+    padding: 4px 8px;
+    margin: 0;
+    vertical-align: middle;
+    background: #fff;
+    min-width: 4.5rem;
+    max-width: min(28rem, 48vw);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.grid-table thead th {
+    background: #e2e8f0;
+    font-weight: 600;
+    color: #0f172a;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    box-shadow: 0 1px 0 #94a3b8;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    text-align: center;
+}
+
+.grid-table thead th .col-resize-grip {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 7px;
+    height: 100%;
+    min-height: 1.5rem;
+    cursor: col-resize;
+    z-index: 4;
+    user-select: none;
+    background: transparent;
+}
+
+.grid-table thead th .col-resize-grip:hover {
+    background: rgba(37, 99, 235, 0.14);
+}
+
+.grid-table tbody tr:nth-child(even) td {
+    background: #f8fafc;
+}
+
+.grid-table th.col-check,
+.grid-table td.col-check {
+    min-width: 2.5rem;
+    max-width: 3.25rem;
+    width: 2.75rem;
+    padding-left: 4px;
+    padding-right: 4px;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.grid-table td.col-check input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    min-width: 1.05rem;
+    max-width: 1.05rem;
+    margin: 0 auto;
+    padding: 0;
+    display: block;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+.grid-table thead th.col-check input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    min-width: 1.05rem;
+    max-width: 1.05rem;
+    margin: 0 auto;
+    display: block;
+}
+
+.col-check {
+    text-align: center;
+}
+
+.grid-table thead th.col-id {
+    min-width: 3.25rem;
+    max-width: 6rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.grid-table tbody td.col-id {
+    min-width: 3.25rem;
+    max-width: 6rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* 긴 식별자 컬럼 헤더(예: code_group_id) — 헤더 글자 길이 기준 */
+.grid-table thead th.col-cgid {
+    min-width: 11.5rem;
+    max-width: none;
+    white-space: nowrap;
+}
+
+.grid-table tbody td.col-cgid {
+    min-width: 11.5rem;
+    max-width: none;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.col-id {
+    font-variant-numeric: tabular-nums;
+}
+
+.grid-table th.col-action,
+.grid-table td.col-action {
+    min-width: 4.5rem;
+    max-width: 8rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.col-action {
+    text-align: center;
+}
+
+.cell-input {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    padding: 2px 0;
+    margin: 0;
+    font-size: 14px;
+    font-family: inherit;
+    background: transparent;
+    min-height: 26px;
+}
+
+.cell-input:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+    background: #fff;
+}
+
+.grid-table td.cell-text {
+    min-width: 5rem;
+    max-width: min(28rem, 48vw);
+}
+
+.cell-text {
+    font-size: 14px;
+}
+
+.grid-table .cell-input:not([type="checkbox"]):not([type="radio"]) {
+    min-width: 6rem;
+    max-width: min(28rem, 48vw);
+    box-sizing: border-box;
+}
+
+/* 시스템/담당자/자산 관리 엔티티 목록: 열 너비 약 2/3 수준 */
+.entity-list-grid.grid-table th,
+.entity-list-grid.grid-table td {
+    min-width: 1.5rem;
+    max-width: min(18.67rem, 32vw);
+}
+
+.entity-list-grid.grid-table th.col-check,
+.entity-list-grid.grid-table td.col-check {
+    min-width: 0.85rem;
+}
+
+.entity-list-grid.grid-table th.col-id,
+.entity-list-grid.grid-table td.col-id {
+    min-width: 1.65rem;
+}
+
+.entity-list-grid.grid-table td.cell-text {
+    min-width: 1.65rem;
+}
+
+.entity-list-grid.grid-table .cell-input:not([type="checkbox"]):not([type="radio"]) {
+    min-width: 2rem;
+}
+
+/* 자산 매핑 / 자산 리스트 — 자산관리번호: 좌우 여백·줄바꿈으로 잘림 완화 */
+.grid-table th.col-asset-mgmt-no,
+.grid-table td.col-asset-mgmt-no {
+    min-width: 11rem;
+    max-width: min(42rem, 72vw);
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    padding-left: 12px;
+    padding-right: 12px;
+    box-sizing: border-box;
+}
+
+input,
+select,
+button {
+    background: #ffffff;
+    color: #1f2937;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+button,
+.button-link {
+    background: #2563eb;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background-color 0.12s ease;
+}
+
+button:hover,
+.button-link:hover {
+    background: #1d4ed8;
+}
+
+.button-link.secondary {
+    background: #ffffff;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.button-link.secondary:hover {
+    background: #eff6ff;
+}
+
+.list-card-footer-right .excel-action-btn {
+    min-width: 118px;
+    min-height: 36px;
+    padding: 0 14px;
+    box-sizing: border-box;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.toolbar-btn {
+    padding: 7px 12px;
+    font-size: 14px;
+}
+
+.toolbar-btn.danger-outline,
+.danger-outline {
+    background: #ffffff;
+    color: #b91c1c;
+    border: 1px solid #f87171;
+}
+
+.toolbar-btn.danger-outline:hover,
+.danger-outline:hover {
+    background: #fef2f2;
+}
+
+.danger {
+    background: #dc2626;
+}
+
+.danger:hover {
+    background: #b91c1c;
+}
+
+.error {
+    color: #b91c1c;
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0 16px 10px;
+}
+
+.muted {
+    color: #64748b;
+}
+
+.muted.small {
+    font-size: 13px;
+}
+
+.new-row td {
+    background: #eff6ff !important;
+}
+
+.form-bindings {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.hidden-file-form {
+    display: inline;
+}
+
+.card-inner-form {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    margin: 0;
+}
+
+select.cell-input {
+    border: none;
+    width: 100%;
+    border-radius: 0;
+    min-height: 26px;
+}
+
+button:disabled,
+.toolbar-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.mapping-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 0 16px 16px;
+}
+
+.mapping-field-row {
+    display: grid;
+    grid-template-columns: minmax(11rem, 14rem) 1fr;
+    gap: 10px 16px;
+    align-items: start;
+}
+
+@media (max-width: 720px) {
+    .mapping-field-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mapping-label {
+    font-weight: 700;
+    font-size: 14px;
+    color: #334155;
+    padding-top: 6px;
+}
+
+.mapping-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+}
+
+.mapping-stack {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.mapping-select {
+    min-width: min(100%, 22rem);
+    max-width: 100%;
+}
+
+.mapping-text {
+    min-width: min(100%, 18rem);
+    flex: 1 1 12rem;
+}
+
+.mapping-or {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.mapping-grid-5 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 8px;
+    width: 100%;
+}
+
+.mapping-actions {
+    padding-top: 6px;
+}
+
+.mapping-list-grid .mapping-cell-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 8rem;
+    vertical-align: top;
+}
+
+.mapping-list-grid .mapping-cell-inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    min-width: 11rem;
+}
+
+.mapping-list-grid .mapping-cell-inline .cell-input {
+    flex: 1 1 6.5rem;
+    min-width: 5rem;
+}
+
+.mapping-list-grid .mapping-c-field-col {
+    min-width: 7rem;
+}
+
+.mapping-list-grid .mapping-asset-id-col {
+    min-width: 12rem;
+}
+
+.mapping-list-wide {
+    min-width: 1100px;
+}
+
+.mapping-list-grid .mapping-col-narrow {
+    min-width: 6.5rem;
+    max-width: 9rem;
+}
+
+.mapping-list-grid .mapping-col-system {
+    min-width: 8.5rem;
+    max-width: 11rem;
+}
+
+.mapping-list-grid .mapping-b-role-td {
+    vertical-align: top;
+}
+
+.mapping-list-grid .cell-input {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* 자산 리스트와 같은 가로 그리드 느낌: 자산 매핑 편집 행 */
+.mapping-editable-flat .mapping-flat-td {
+    vertical-align: middle;
+    min-width: 5.5rem;
+}
+
+.mapping-editable-flat .mapping-flat-select,
+.mapping-editable-flat .mapping-flat-input {
+    width: 100%;
+    min-width: 5rem;
+    max-width: min(20rem, 38vw);
+    box-sizing: border-box;
+    margin: 0;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    background: #fff;
+    font-size: 14px;
+    line-height: 1.35;
+    padding: 3px 6px;
+}
+
+.mapping-editable-flat .mapping-flat-select:focus,
+.mapping-editable-flat .mapping-flat-input:focus {
+    border-color: #94a3b8;
+    outline: none;
+}
+
+.asset-suggest-combo {
+    position: relative;
+    min-width: 10rem;
+}
+
+.asset-system-suggest {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 20;
+    margin: 2px 0 0;
+    padding: 4px 0;
+    list-style: none;
+    max-height: 12rem;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid #94a3b8;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.asset-system-suggest li {
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.asset-system-suggest li:hover {
+    background: #e2e8f0;
+}
+
+/* AI 자산관리: 챗 UI — 본문 영역 80% 답변, 20% 질문 */
+.card.ai-asset-chat {
+    padding: 0;
+    overflow: hidden;
+}
+
+.ai-asset-chat {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: min(82dvh, calc(100dvh - 10rem));
+    max-width: 100%;
+    padding: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.ai-asset-chat-messages {
+    flex: 0 0 80%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 16px 18px;
+    background: #fafbff;
+    border-bottom: 1px solid #dbe5f2;
+    overscroll-behavior: contain;
+}
+
+.ai-asset-chat-input-wrap {
+    flex: 0 0 20%;
+    min-height: 5.5rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 14px 14px;
+    background: linear-gradient(180deg, #f4f7fc 0%, #eef2f9 100%);
+    border-top: 1px solid #e2e8f0;
+}
+
+.ai-asset-chat-textarea {
+    flex: 1 1 auto;
+    min-height: 3.25rem;
+    width: 100%;
+    resize: none;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.45;
+    background: #fff;
+    color: #0f172a;
+}
+
+.ai-asset-chat-textarea:focus {
+    outline: 2px solid #2563eb;
+    outline-offset: 0;
+    border-color: #2563eb;
+}
+
+.ai-asset-chat-actions {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.ai-asset-msg-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 14px;
+    max-width: 100%;
+}
+
+.ai-asset-msg-row--user {
+    align-items: flex-end;
+}
+
+.ai-asset-msg-row--assistant {
+    align-items: flex-start;
+}
+
+.ai-asset-msg-meta {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    padding: 0 2px;
+}
+
+.ai-asset-msg-bubble {
+    max-width: min(92%, 48rem);
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.45;
+    font-size: 14px;
+    word-break: break-word;
+}
+
+.ai-asset-msg-bubble--assistant {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.ai-asset-msg-bubble--user {
+    background: #2563eb;
+    color: #fff;
+}

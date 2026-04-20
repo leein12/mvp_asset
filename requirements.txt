@@ -1,0 +1,8 @@
+SQLAlchemy
+pydantic
+pandas
+openpyxl
+fastapi
+uvicorn
+jinja2
+python-multipart

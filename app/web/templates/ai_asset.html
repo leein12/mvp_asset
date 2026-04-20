@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card ai-asset-chat" aria-label="AI 자산관리 챗">
+    <div class="ai-asset-chat-messages" id="ai-asset-messages" role="log" aria-live="polite">
+        <div class="ai-asset-msg-row ai-asset-msg-row--assistant">
+            <div class="ai-asset-msg-meta">안내</div>
+            <div class="ai-asset-msg-bubble ai-asset-msg-bubble--assistant">
+                자산 데이터에 대해 질문할 수 있습니다. 아래 입력창에 질문을 작성한 뒤 전송하세요. (응답 연동은 추후 구성할 수 있습니다.)
+            </div>
+        </div>
+    </div>
+    <div class="ai-asset-chat-input-wrap">
+        <label class="visually-hidden" for="ai-asset-input">질문 입력</label>
+        <textarea id="ai-asset-input" class="ai-asset-chat-textarea" rows="2" placeholder="예: 특정 호스트명이 포함된 자산을 요약해 줘"></textarea>
+        <div class="ai-asset-chat-actions">
+            <button type="button" class="toolbar-btn" id="ai-asset-send">전송</button>
+        </div>
+    </div>
+</section>
+<script>
+(function () {
+    const box = document.getElementById("ai-asset-messages");
+    const ta = document.getElementById("ai-asset-input");
+    const btn = document.getElementById("ai-asset-send");
+    if (!box || !ta || !btn) return;
+
+    function scrollBottom() {
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function addBubble(role, text) {
+        const row = document.createElement("div");
+        row.className = "ai-asset-msg-row ai-asset-msg-row--" + role;
+        const meta = document.createElement("div");
+        meta.className = "ai-asset-msg-meta";
+        meta.textContent = role === "user" ? "나" : "안내";
+        const bubble = document.createElement("div");
+        bubble.className = "ai-asset-msg-bubble ai-asset-msg-bubble--" + role;
+        bubble.textContent = text;
+        row.appendChild(meta);
+        row.appendChild(bubble);
+        box.appendChild(row);
+    }
+
+    function send() {
+        const t = (ta.value || "").trim();
+        if (!t) return;
+        addBubble("user", t);
+        ta.value = "";
+        scrollBottom();
+        addBubble("assistant", "질문을 받았습니다. 백엔드와 모델을 연결하면 이 영역에 답변이 표시됩니다.");
+        scrollBottom();
+    }
+
+    btn.addEventListener("click", send);
+    ta.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            send();
+        }
+    });
+})();
+</script>
+{% endblock %}

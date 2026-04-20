@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block content %}
+{% macro entity_data_cell(meta, row, code_lists) -%}
+{% set fk = meta.field_key|fk_attr %}
+{% set cur = row|attr(fk) %}
+{% if cur is none %}{% set cur = '' %}{% endif %}
+{% set ft = (meta.field_type or 'text')|lower %}
+{% if ft == 'code' and meta.code_group_id %}
+{% set clist = code_lists.get(fk, []) %}
+<td><select class="cell-input" name="f_{{ row.id }}_{{ fk }}">
+{% for co in clist %}
+<option value="{{ co.code }}"{% if cur == co.code or (not cur and loop.first) %} selected{% endif %} title="{{ co.label }}">{{ co.code }}</option>
+{% endfor %}
+</select></td>
+{% elif ft == 'date' %}
+{% set date_default = '1900-01-01' %}
+{% set dval = cur|trim or date_default %}
+<td><input type="date" class="cell-input entity-date-input" name="f_{{ row.id }}_{{ fk }}" value="{{ dval }}" autocomplete="off"></td>
+{% else %}
+<td><input type="text" class="cell-input" name="f_{{ row.id }}_{{ fk }}" value="{{ cur }}" maxlength="{{ meta.max_length }}"></td>
+{% endif %}
+{%- endmacro %}
+
+{% macro entity_new_cell(meta, code_lists) -%}
+{% set fk = meta.field_key|fk_attr %}
+{% set ft = (meta.field_type or 'text')|lower %}
+{% if ft == 'code' and meta.code_group_id %}
+{% set clist = code_lists.get(fk, []) %}
+<td><select class="cell-input new-field" data-field="{{ fk }}">
+{% for co in clist %}
+<option value="{{ co.code }}"{% if loop.first %} selected{% endif %} title="{{ co.label }}">{{ co.code }}</option>
+{% endfor %}
+</select></td>
+{% elif ft == 'date' %}
+<td><input type="date" class="cell-input new-field entity-date-input" data-field="{{ fk }}" value="1900-01-01" autocomplete="off"></td>
+{% else %}
+<td><input type="text" class="cell-input new-field" data-field="{{ fk }}" value="" maxlength="{{ meta.max_length }}"></td>
+{% endif %}
+{%- endmacro %}
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+{% if popup %}
+<script>alert({{ popup|tojson }});</script>
+{% endif %}
+
+<section class="card list-card list-card--compact list-card--body-scroll">
+    <div class="list-card-sticky-chrome">
+        <div class="list-card-header">
+            <div class="list-card-header-left">
+                <form method="get" action="/entities/{{ entity_type }}" class="inline-form tight">
+                    <input type="hidden" name="page" value="1">
+                    <input type="hidden" name="per_page" value="{{ per_page }}">
+                    <input type="text" name="q" value="{{ query }}" placeholder="검색어">
+                    <button type="submit">검색</button>
+                </form>
+                <form method="get" action="/entities/{{ entity_type }}" class="inline-form tight">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    <input type="hidden" name="page" value="1">
+                    <label class="tight-label">페이지당
+                        <select name="per_page" onchange="this.form.submit()">
+                            <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                        </select>
+                    </label>
+                </form>
+            </div>
+            <div class="list-card-header-right">
+                <button type="button" id="btn-add-row" class="toolbar-btn">추가</button>
+                <button type="button" id="btn-save" class="toolbar-btn">저장</button>
+                <button type="button" id="btn-delete" class="toolbar-btn danger-outline">삭제</button>
+            </div>
+        </div>
+
+        <div class="pager-bar">
+            {% if page > 1 %}
+            <a class="pager-link" href="/entities/{{ entity_type }}?q={{ query|uquote }}&page={{ page - 1 }}&per_page={{ per_page }}">이전</a>
+            {% endif %}
+            <span class="pager-info">{{ page }} / {{ total_pages }} (총 {{ total_rows }}건)</span>
+            {% if page < total_pages %}
+            <a class="pager-link" href="/entities/{{ entity_type }}?q={{ query|uquote }}&page={{ page + 1 }}&per_page={{ per_page }}">다음</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="table-scroll">
+        <table class="grid-table entity-list-grid">
+            <thead>
+                <tr>
+                    <th class="col-check"><input type="checkbox" id="check-all" title="전체 선택"></th>
+                    <th class="col-id">id</th>
+                    {% for meta in metas %}<th>{{ meta.display_name }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody id="entity-table-body">
+                {% for row in rows %}
+                <tr class="entity-row" data-row-id="{{ row.id }}">
+                    <td class="col-check"><input type="checkbox" class="row-check" value="{{ row.id }}"></td>
+                    <td class="col-id">{{ entity_type }}{{ '%04d' % row.id }}</td>
+                    {% for meta in metas %}{{ entity_data_cell(meta, row, meta_code_options) }}{% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="list-card-footer">
+        <div></div>
+        <div class="list-card-footer-right">
+            <a class="button-link secondary excel-action-btn" href="/entities/{{ entity_type }}/export">엑셀 Export</a>
+            <button type="button" class="button-link secondary excel-action-btn" id="btn-import-trigger">엑셀 Import</button>
+            <form id="import-form" method="post" action="/entities/{{ entity_type }}/import" enctype="multipart/form-data" class="hidden-file-form">
+                <input type="hidden" name="return_q" value="{{ query }}">
+                <input type="hidden" name="return_page" value="{{ page }}">
+                <input type="hidden" name="return_per_page" value="{{ per_page }}">
+                <input type="file" name="file" id="import-file-input" accept=".xlsx,.xls" class="visually-hidden">
+            </form>
+        </div>
+    </div>
+</section>
+
+<template id="new-row-template">
+    <tr class="entity-row new-row" data-row-id="new">
+        <td class="col-check"><input type="checkbox" class="row-check" value="new"></td>
+        <td class="col-id col-id-new">—</td>
+        {% for meta in metas %}{{ entity_new_cell(meta, meta_code_options) }}{% endfor %}
+    </tr>
+</template>
+
+<script>
+(function () {
+    const entityType = {{ entity_type|tojson }};
+    const maxRowId = {{ max_row_id|int }};
+    const returnQ = {{ query|tojson }};
+    const returnPage = {{ page|int }};
+    const returnPerPage = {{ per_page|int }};
+
+    function appendReturnFields(form) {
+        [["return_q", returnQ], ["return_page", String(returnPage)], ["return_per_page", String(returnPerPage)]].forEach(([k, v]) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = k;
+            h.value = v;
+            form.appendChild(h);
+        });
+    }
+
+    function normalizeEntityDateInput(el) {
+        if (el.type === "date") return;
+        const digits = String(el.value || "").replace(/\D/g, "").slice(0, 8);
+        if (digits.length === 8) {
+            el.value = digits.slice(0, 4) + "-" + digits.slice(4, 6) + "-" + digits.slice(6, 8);
+        }
+    }
+
+    const tableBody = document.getElementById("entity-table-body");
+    const checkAll = document.getElementById("check-all");
+    const addBtn = document.getElementById("btn-add-row");
+    const saveBtn = document.getElementById("btn-save");
+    const deleteBtn = document.getElementById("btn-delete");
+    const newRowTemplate = document.getElementById("new-row-template");
+    const importTrigger = document.getElementById("btn-import-trigger");
+    const importForm = document.getElementById("import-form");
+    const importFile = document.getElementById("import-file-input");
+
+    tableBody.addEventListener("input", (e) => {
+        if (e.target.classList.contains("entity-date-input")) normalizeEntityDateInput(e.target);
+    });
+    tableBody.addEventListener("blur", (e) => {
+        if (e.target.classList.contains("entity-date-input")) normalizeEntityDateInput(e.target);
+    }, true);
+
+    function autoCheckRowOnEdit(target) {
+        const tr = target.closest(".entity-row");
+        if (!tr || tr.classList.contains("new-row")) return;
+        if (target.matches && target.matches(".row-check")) return;
+        const cb = tr.querySelector(".row-check");
+        if (cb) cb.checked = true;
+    }
+    tableBody.addEventListener("input", (e) => autoCheckRowOnEdit(e.target));
+    tableBody.addEventListener("change", (e) => autoCheckRowOnEdit(e.target));
+
+    checkAll.addEventListener("change", () => {
+        tableBody.querySelectorAll(".entity-row:not(.new-row) .row-check").forEach((cb) => {
+            cb.checked = checkAll.checked;
+        });
+    });
+
+    function copyRowDataFromSource(newTr, srcTr) {
+        const srcCells = srcTr.querySelectorAll("td");
+        const dstCells = newTr.querySelectorAll("td");
+        for (let c = 2; c < srcCells.length && c < dstCells.length; c++) {
+            const sIn = srcCells[c].querySelector("input, select");
+            const dIn = dstCells[c].querySelector("input, select");
+            if (!sIn || !dIn) continue;
+            if (dIn.tagName === "SELECT") {
+                dIn.value = sIn.value;
+            } else {
+                dIn.value = sIn.value;
+            }
+        }
+    }
+
+    function uncheckAllDataRows() {
+        if (checkAll) checkAll.checked = false;
+        tableBody.querySelectorAll(".entity-row:not(.new-row) .row-check").forEach((cb) => {
+            cb.checked = false;
+        });
+    }
+
+    function selectOnlyNewRows() {
+        uncheckAllDataRows();
+        tableBody.querySelectorAll(".entity-row.new-row .row-check").forEach((cb) => {
+            cb.checked = true;
+        });
+    }
+
+    addBtn.addEventListener("click", () => {
+        const sources = [];
+        tableBody.querySelectorAll(".entity-row:not(.new-row)").forEach((tr) => {
+            const cb = tr.querySelector(".row-check");
+            if (cb && cb.checked) sources.push(tr);
+        });
+        tableBody.querySelectorAll(".entity-row.new-row").forEach((tr) => tr.remove());
+        const nextSeq = maxRowId + 1;
+        if (sources.length) {
+            for (let i = sources.length - 1; i >= 0; i--) {
+                const src = sources[i];
+                const row = newRowTemplate.content.firstElementChild.cloneNode(true);
+                copyRowDataFromSource(row, src);
+                const previewNum = maxRowId + i + 1;
+                const idCell = row.querySelector(".col-id");
+                if (idCell) idCell.textContent = entityType + String(previewNum).padStart(4, "0");
+                tableBody.prepend(row);
+            }
+            selectOnlyNewRows();
+            return;
+        }
+        const row = newRowTemplate.content.firstElementChild.cloneNode(true);
+        const idCell = row.querySelector(".col-id");
+        if (idCell) idCell.textContent = entityType + String(nextSeq).padStart(4, "0");
+        tableBody.prepend(row);
+        selectOnlyNewRows();
+    });
+
+    function getChecked() {
+        return Array.from(tableBody.querySelectorAll(".row-check:checked"));
+    }
+
+    saveBtn.addEventListener("click", () => {
+        const checked = getChecked();
+        if (!checked.length) {
+            alert("저장할 행을 선택하세요.");
+            return;
+        }
+        const newOnes = checked.filter((c) => c.value === "new");
+        const ids = checked.filter((c) => c.value !== "new").map((c) => c.value);
+        if (newOnes.length && ids.length) {
+            alert("신규 행과 기존 행을 동시에 저장할 수 없습니다.");
+            return;
+        }
+        if (newOnes.length) {
+            const newRowsToSave = Array.from(tableBody.querySelectorAll(".entity-row.new-row")).filter(
+                (tr) => tr.querySelector(".row-check")?.checked
+            );
+            if (!newRowsToSave.length) {
+                alert("저장할 신규 행을 선택하세요.");
+                return;
+            }
+            const form = document.createElement("form");
+            form.method = "post";
+            form.action = "/entities/" + entityType + "/batch-create";
+            appendReturnFields(form);
+            newRowsToSave.forEach((row, idx) => {
+                row.querySelectorAll(".new-field").forEach((input) => {
+                    if (input.classList.contains("entity-date-input")) normalizeEntityDateInput(input);
+                    const h = document.createElement("input");
+                    h.type = "hidden";
+                    h.name = "new_" + idx + "_" + input.dataset.field;
+                    h.value = input.value;
+                    form.appendChild(h);
+                });
+            });
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
+        const form = document.createElement("form");
+        form.method = "post";
+        form.action = "/entities/" + entityType + "/batch-update";
+        appendReturnFields(form);
+        ids.forEach((id) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = "ids";
+            h.value = id;
+            form.appendChild(h);
+        });
+        ids.forEach((id) => {
+            const row = tableBody.querySelector(`.entity-row[data-row-id="${id}"]`);
+            if (!row) return;
+            row.querySelectorAll(`input[name^="f_${id}_"],select[name^="f_${id}_"]`).forEach((input) => {
+                if (input.classList.contains("entity-date-input")) normalizeEntityDateInput(input);
+                const copy = document.createElement("input");
+                copy.type = "hidden";
+                copy.name = input.name;
+                copy.value = input.value;
+                form.appendChild(copy);
+            });
+        });
+        document.body.appendChild(form);
+        form.submit();
+    });
+
+    deleteBtn.addEventListener("click", () => {
+        const checked = getChecked().filter((c) => c.value !== "new");
+        const newRows = getChecked().filter((c) => c.value === "new");
+        newRows.forEach((c) => c.closest(".entity-row")?.remove());
+        if (!checked.length) {
+            alert("삭제할 행을 선택하세요.");
+            return;
+        }
+        if (!confirm("선택한 " + checked.length + "건을 삭제할까요?")) return;
+        const form = document.createElement("form");
+        form.method = "post";
+        form.action = "/entities/" + entityType + "/batch-delete";
+        appendReturnFields(form);
+        checked.forEach((c) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = "ids";
+            h.value = c.value;
+            form.appendChild(h);
+        });
+        document.body.appendChild(form);
+        form.submit();
+    });
+
+    importTrigger.addEventListener("click", () => importFile.click());
+    importFile.addEventListener("change", () => {
+        if (!importFile.files.length) return;
+        importForm.submit();
+    });
+})();
+</script>
+{% endblock %}

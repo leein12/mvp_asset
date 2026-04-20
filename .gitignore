@@ -1,0 +1,16 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.db
+.idea/
+.vscode/
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,272 @@
+{# REMOVED_ASSET_MAPPING_TAB: /relations 라우트 비활성. 리팩터링 시 이 파일·Relation 백엔드 정리 시 함께 삭제 #}
+{% extends "base.html" %}
+{% block content %}
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+{% if popup %}
+<script>alert({{ popup|tojson }});</script>
+{% endif %}
+
+{% set mk = mapping_ctx.mapping_keys %}
+
+{% macro mapping_b_role_select(rid, rk, options, selected_b_id) %}
+    <select class="cell-input mapping-flat-select{% if rid == 'new' %} new-field{% endif %}" {% if rid == 'new' %}data-field="b_{{ rk }}_id"{% else %}name="f_{{ rid }}_b_{{ rk }}_id"{% endif %}>
+        <option value="">— 성명 선택 —</option>
+        {% for o in options %}
+        <option value="{{ o.id }}"{% if selected_b_id is not none and selected_b_id != '' and (o.id == (selected_b_id|int)) %} selected{% endif %}>{{ o.label }}</option>
+        {% endfor %}
+    </select>
+{% endmacro %}
+
+{% macro mapping_system_select(rid, selected_a_id) %}
+    <select class="cell-input mapping-flat-select{% if rid == 'new' %} new-field{% endif %}" {% if rid == 'new' %}data-field="a_id"{% else %}name="f_{{ rid }}_a_id"{% endif %}>
+        <option value="">— 시스템명 선택 —</option>
+        {% for o in mapping_ctx.a_options %}
+        <option value="{{ o.id }}"{% if selected_a_id is not none and (o.id == (selected_a_id|int)) %} selected{% endif %}>{{ o.label }}</option>
+        {% endfor %}
+    </select>
+{% endmacro %}
+
+{% macro mapping_c_field_input(rid, form_suffix, placeholder, value, suggests, dl_key) %}
+    <datalist id="dl-{{ rid }}-{{ dl_key }}">
+        {% for s in suggests %}
+        <option value="{{ s }}">
+        {% endfor %}
+    </datalist>
+    <input type="text" class="cell-input mapping-flat-input{% if rid == 'new' %} new-field{% endif %}" list="dl-{{ rid }}-{{ dl_key }}" {% if rid == 'new' %}data-field="{{ form_suffix }}"{% else %}name="f_{{ rid }}_{{ form_suffix }}"{% endif %} placeholder="{{ placeholder }}" maxlength="255" value="{{ value }}">
+{% endmacro %}
+
+{% macro mapping_row_columns(rid, row, mrow, drow) %}
+{% set mp = ((row.relation_meta or {}).get('mapping', {}) or {}) if row else {} %}
+{% for col in mapping_list_columns %}
+    <td class="{% if col.key == 'asset_management_no' %}col-asset-mgmt-no cell-text{% else %}mapping-flat-td{% endif %}">
+        {% if col.key == 'asset_management_no' %}
+            {% if rid == 'new' %}<span class="muted">—</span>{% else %}{{ drow.get(col.key) }}{% endif %}
+        {% elif col.key == 'map_system_name' %}
+            {{ mapping_system_select(rid, row.a_id if row else none) }}
+        {% elif col.key == 'map_hyup' %}
+            {{ mapping_b_role_select(rid, 'hyup', mapping_ctx.b_role_options.get('hyup', []), row.b_id if row else none) }}
+        {% elif col.key == 'map_dt' %}
+            {{ mapping_b_role_select(rid, 'dt', mapping_ctx.b_role_options.get('dt', []), mp.get('b_dt')) }}
+        {% elif col.key == 'map_ito' %}
+            {{ mapping_b_role_select(rid, 'ito', mapping_ctx.b_role_options.get('ito', []), mp.get('b_ito')) }}
+        {% elif col.key == 'map_ops' %}
+            {{ mapping_b_role_select(rid, 'ops', mapping_ctx.b_role_options.get('ops', []), mp.get('b_ops')) }}
+        {% elif col.key == 'map_hostname' %}
+            {{ mapping_c_field_input(rid, 'c_hostname_new', 'Hostname', mrow.c_hostname, mapping_ctx.c_suggest_hostname, 'chn') }}
+        {% elif col.key == 'map_server_cls' %}
+            {{ mapping_c_field_input(rid, 'c_server_cls_new', '서버분류', mrow.c_server_cls, mapping_ctx.c_suggest_server_cls, 'csc') }}
+        {% elif col.key == 'map_ip' %}
+            {{ mapping_c_field_input(rid, 'c_ip_new', 'IP', mrow.c_ip, mapping_ctx.c_suggest_ip, 'cip') }}
+        {% elif col.key == 'map_port' %}
+            {{ mapping_c_field_input(rid, 'c_port_new', 'Port', mrow.c_port, mapping_ctx.c_suggest_port, 'cpt') }}
+        {% elif col.key == 'map_server_kind' %}
+            {{ mapping_c_field_input(rid, 'c_server_kind_new', '서버 구분', mrow.c_server_kind, mapping_ctx.c_suggest_server_kind, 'csk') }}
+        {% endif %}
+    </td>
+{% endfor %}
+{% endmacro %}
+
+<section class="card list-card">
+    <div class="list-card-header">
+        <div class="list-card-header-left">
+            <form method="get" action="/relations" class="inline-form tight">
+                <input type="hidden" name="page" value="1">
+                <label class="tight-label">페이지당
+                    <select name="per_page" onchange="this.form.submit()">
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </label>
+            </form>
+        </div>
+        <div class="list-card-header-right">
+            <button type="button" id="map-btn-add" class="toolbar-btn">추가</button>
+            <button type="button" id="map-btn-save" class="toolbar-btn">저장</button>
+            <button type="button" id="map-btn-delete" class="toolbar-btn danger-outline">삭제</button>
+        </div>
+    </div>
+
+    <div class="pager-bar">
+        {% if page > 1 %}
+        <a class="pager-link" href="/relations?page={{ page - 1 }}&per_page={{ per_page }}">이전</a>
+        {% endif %}
+        <span class="pager-info">{{ page }} / {{ total_pages }} (총 {{ total_rows }}건)</span>
+        {% if page < total_pages %}
+        <a class="pager-link" href="/relations?page={{ page + 1 }}&per_page={{ per_page }}">다음</a>
+        {% endif %}
+    </div>
+
+    {% if not mk.a_system or not mk.b_role or not mk.b_name %}
+    <p class="error" style="margin:12px 16px;">FieldMeta에 시스템명·담당자 역할·성명 필드를 찾을 수 없습니다. Admin에서 엔티티 필드 메타를 확인하세요.</p>
+    {% endif %}
+
+    <div class="table-scroll asset-list-scroll">
+        <table class="grid-table asset-list-grid mapping-list-wide mapping-editable-flat">
+            <thead>
+                <tr>
+                    <th class="col-check"><input type="checkbox" id="map-check-all" title="전체 선택"></th>
+                    {% for col in mapping_list_columns %}
+                    <th class="asset-list-th">{{ col.label }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody id="mapping-table-body">
+                {% for item in mapping_editable_rows %}
+                {% set row = item.relation %}
+                {% set mrow = item.mrow %}
+                {% set drow = item.display %}
+                <tr class="mapping-row entity-row" data-row-id="{{ row.id }}">
+                    <td class="col-check"><input type="checkbox" class="row-check" value="{{ row.id }}"></td>
+                    {{ mapping_row_columns(row.id, row, mrow, drow) }}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="list-card-footer">
+        <div class="muted small" style="padding-left:16px;">자산관리번호당 1행입니다. 저장 시 <code>CA#####</code> 채번. 시스템명·담당자 성명은 각 관리 탭에 등록된 항목만 선택합니다. 자산 필드는 선택·입력 가능합니다.</div>
+    </div>
+</section>
+
+<template id="mapping-new-row-template">
+    <tr class="mapping-row entity-row new-row" data-row-id="new">
+        <td class="col-check"><input type="checkbox" class="row-check" value="new"></td>
+        {{ mapping_row_columns('new', none, mapping_new_mrow, {}) }}
+    </tr>
+</template>
+
+<script>
+(function () {
+    const returnPage = {{ page|int }};
+    const returnPerPage = {{ per_page|int }};
+    function appendReturnFields(form) {
+        [["return_page", String(returnPage)], ["return_per_page", String(returnPerPage)]].forEach(([k, v]) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = k;
+            h.value = v;
+            form.appendChild(h);
+        });
+    }
+
+    const tableBody = document.getElementById("mapping-table-body");
+    const checkAll = document.getElementById("map-check-all");
+    const addBtn = document.getElementById("map-btn-add");
+    const saveBtn = document.getElementById("map-btn-save");
+    const deleteBtn = document.getElementById("map-btn-delete");
+    const newRowTemplate = document.getElementById("mapping-new-row-template");
+
+    if (checkAll && tableBody) {
+        checkAll.addEventListener("change", () => {
+            tableBody.querySelectorAll(".mapping-row:not(.new-row) .row-check").forEach((cb) => {
+                cb.checked = checkAll.checked;
+            });
+        });
+    }
+
+    function getChecked() {
+        return Array.from(tableBody.querySelectorAll(".row-check:checked"));
+    }
+
+    addBtn.addEventListener("click", () => {
+        tableBody.querySelectorAll(".mapping-row.new-row").forEach((tr) => tr.remove());
+        const row = newRowTemplate.content.firstElementChild.cloneNode(true);
+        tableBody.prepend(row);
+    });
+
+    saveBtn.addEventListener("click", () => {
+        const checked = getChecked();
+        if (!checked.length) {
+            alert("저장할 행을 선택하세요.");
+            return;
+        }
+        const newOnes = checked.filter((c) => c.value === "new");
+        const ids = checked.filter((c) => c.value !== "new").map((c) => c.value);
+        if (newOnes.length && ids.length) {
+            alert("신규 행과 기존 행을 동시에 저장할 수 없습니다.");
+            return;
+        }
+        if (newOnes.length) {
+            const newRowsToSave = Array.from(tableBody.querySelectorAll(".mapping-row.new-row")).filter(
+                (tr) => tr.querySelector(".row-check")?.checked
+            );
+            if (!newRowsToSave.length) {
+                alert("저장할 신규 행을 선택하세요.");
+                return;
+            }
+            const form = document.createElement("form");
+            form.method = "post";
+            form.action = "/relations/batch-create";
+            appendReturnFields(form);
+            newRowsToSave.forEach((row, idx) => {
+                row.querySelectorAll(".new-field").forEach((input) => {
+                    const fk = input.dataset.field;
+                    if (!fk) return;
+                    const h = document.createElement("input");
+                    h.type = "hidden";
+                    h.name = "new_" + idx + "_" + fk;
+                    h.value = input.value;
+                    form.appendChild(h);
+                });
+            });
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
+        const form = document.createElement("form");
+        form.method = "post";
+        form.action = "/relations/batch-update";
+        appendReturnFields(form);
+        ids.forEach((id) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = "ids";
+            h.value = id;
+            form.appendChild(h);
+        });
+        ids.forEach((id) => {
+            const row = tableBody.querySelector('.mapping-row[data-row-id="' + id + '"]');
+            if (!row) return;
+            row.querySelectorAll("[name^=\"f_" + id + "_\"]").forEach((input) => {
+                const copy = document.createElement("input");
+                copy.type = "hidden";
+                copy.name = input.name;
+                copy.value = input.value;
+                form.appendChild(copy);
+            });
+        });
+        document.body.appendChild(form);
+        form.submit();
+    });
+
+    deleteBtn.addEventListener("click", () => {
+        const checked = getChecked().filter((c) => c.value !== "new");
+        getChecked()
+            .filter((c) => c.value === "new")
+            .forEach((c) => c.closest(".mapping-row")?.remove());
+        if (!checked.length) {
+            alert("삭제할 행을 선택하세요.");
+            return;
+        }
+        if (!confirm("선택한 " + checked.length + "건을 삭제할까요?")) return;
+        const form = document.createElement("form");
+        form.method = "post";
+        form.action = "/relations/batch-delete";
+        appendReturnFields(form);
+        checked.forEach((c) => {
+            const h = document.createElement("input");
+            h.type = "hidden";
+            h.name = "ids";
+            h.value = c.value;
+            form.appendChild(h);
+        });
+        document.body.appendChild(form);
+        form.submit();
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,964 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+<script type="application/json" id="admin-page-config">{{ admin_page_config | tojson }}</script>
+
+<div class="admin-shell">
+    <aside class="card admin-sidebar" aria-label="Admin 메뉴">
+        <div class="admin-sidebar-head">관리</div>
+        <nav class="admin-tree-nav" aria-label="섹션 선택">
+            <ul class="admin-tree admin-tree-rail">
+                <li class="admin-tree-section{% if admin_panel == 'groups' or admin_panel == 'codes' %} branch-active{% endif %}">
+                    <span class="admin-tree-section-label">코드</span>
+                    <ul class="admin-tree-children">
+                        <li>
+                            <a href="{{ admin_nav_groups_url }}" class="admin-tree-row admin-tree-sublink{% if admin_panel == 'groups' %} is-active{% endif %}">코드 그룹</a>
+                        </li>
+                        <li>
+                            <a href="{{ admin_nav_codes_url }}" class="admin-tree-row admin-tree-sublink{% if admin_panel == 'codes' %} is-active{% endif %}">코드 상세</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="admin-tree-section{% if admin_panel == 'entity' %} branch-active{% endif %}">
+                    <a href="{{ admin_nav_entity_root_url }}" class="admin-tree-section-label admin-tree-heading-link">엔티티</a>
+                    <ul class="admin-tree-children">
+                        {% for it in admin_nav_entities %}
+                        <li>
+                            <a href="{{ it.url }}" class="admin-tree-row admin-tree-sublink{% if it.active %} is-active{% endif %}">{{ it.label }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <div class="admin-main">
+        {% if admin_panel == 'groups' %}
+        <section class="card list-card admin-panel-card">
+            <div class="list-card-header">
+                <div class="list-card-header-left">
+                    <span class="depth-part">코드 그룹</span>
+                    <form method="get" action="/admin" class="inline-form tight">
+                        <input type="hidden" name="panel" value="groups">
+                        <input type="hidden" name="entity" value="{{ entity }}">
+                        <input type="hidden" name="codes_page" value="{{ codes_page }}">
+                        <input type="hidden" name="codes_per_page" value="{{ codes_per_page }}">
+                        <input type="hidden" name="metas_page" value="{{ metas_page }}">
+                        <input type="hidden" name="metas_per_page" value="{{ metas_per_page }}">
+                        <input type="hidden" name="groups_page" value="1">
+                        <label class="tight-label">페이지당
+                            <select name="groups_per_page" onchange="this.form.submit()">
+                                <option value="20" {% if groups_per_page == 20 %}selected{% endif %}>20</option>
+                                <option value="50" {% if groups_per_page == 50 %}selected{% endif %}>50</option>
+                                <option value="100" {% if groups_per_page == 100 %}selected{% endif %}>100</option>
+                            </select>
+                        </label>
+                    </form>
+                </div>
+                <div class="list-card-header-right">
+                    <button type="button" class="toolbar-btn" id="admin-group-add" title="선택한 첫 행 이름을 복사해 빈 행 추가. 선택 없으면 빈 행.">추가</button>
+                    <button type="button" class="toolbar-btn" id="admin-group-save" title="선택된 행만 저장">저장</button>
+                    <button type="button" class="toolbar-btn danger-outline" id="admin-group-delete" title="선택된 행만 삭제">삭제</button>
+                </div>
+            </div>
+            <form method="post" action="/admin/groups/batch-update" id="admin-group-batch-form" accept-charset="UTF-8">
+                <input type="hidden" name="entity" value="{{ entity }}">
+                <input type="hidden" name="groups_page" value="{{ groups_page }}">
+                <input type="hidden" name="groups_per_page" value="{{ groups_per_page }}">
+                <input type="hidden" name="codes_page" value="{{ codes_page }}">
+                <input type="hidden" name="codes_per_page" value="{{ codes_per_page }}">
+                <input type="hidden" name="metas_page" value="{{ metas_page }}">
+                <input type="hidden" name="metas_per_page" value="{{ metas_per_page }}">
+                <div class="table-scroll">
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th class="col-check"><input type="checkbox" id="group-select-all" title="전체 선택" aria-label="전체 선택"></th>
+                                <th class="col-check" title="체크된 그룹만 코드 상세 목록에 표시">사용</th>
+                                <th class="col-id" title="코드가 소속되는 그룹 식별자">group_id</th>
+                                <th class="col-id col-cgid" title="code_groups 테이블 PK">code_group_id</th>
+                                <th>그룹명</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-group-tbody">
+                            {% for g in paged_groups %}
+                            <tr data-db-id="{{ g.id }}" data-is-new="0">
+                                <td class="col-check">
+                                    <input type="checkbox" class="group-row-select" name="selected_rows" value="{{ g.id }}" aria-label="선택">
+                                </td>
+                                <td class="col-check">
+                                    <input type="checkbox" class="cell-input" name="group_{{ g.id }}_is_active" value="true" {% if g.is_active %}checked{% endif %} aria-label="사용">
+                                </td>
+                                <td class="col-id cell-text">{{ g.id }}</td>
+                                <td class="col-id col-cgid cell-text">{{ g.id }}</td>
+                                <td><input class="cell-input" type="text" name="group_{{ g.id }}_name" value="{{ g.name }}" required></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <nav class="pager-bar pager-bar--bottom pager-nav" aria-label="코드 그룹 페이지">
+                    {% if groups_pager_prev %}
+                    <a class="pager-link" href="{{ groups_pager_prev }}">이전</a>
+                    {% endif %}
+                    <div class="pager-pages">
+                        {% for item in groups_pager_items %}
+                        {% if item.kind == 'gap' %}
+                        <span class="pager-gap" aria-hidden="true">…</span>
+                        {% else %}
+                        <a href="{{ item.url }}" class="pager-num{% if item.current %} is-current{% endif %}">{{ item.num }}</a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="pager-info">{{ groups_page }} / {{ total_groups_pages }} (총 {{ total_groups }}건)</span>
+                    {% if groups_pager_next %}
+                    <a class="pager-link" href="{{ groups_pager_next }}">다음</a>
+                    {% endif %}
+                </nav>
+                <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">groups-submit</button>
+            </form>
+            <div class="list-card-footer">
+                <div></div>
+                <div class="list-card-footer-right">
+                    <span class="muted small">「사용」이 체크된 그룹만 코드 상세에 나옵니다. group_id·code_group_id는 동일한 code_groups.id입니다.</span>
+                </div>
+            </div>
+        </section>
+        {% elif admin_panel == 'codes' %}
+        <section class="card list-card admin-panel-card">
+            <div class="list-card-header">
+                <div class="list-card-header-left">
+                    <span class="depth-part">코드 상세</span>
+                    <form method="get" action="/admin" class="inline-form tight">
+                        <input type="hidden" name="panel" value="codes">
+                        <input type="hidden" name="entity" value="{{ entity }}">
+                        <input type="hidden" name="groups_page" value="{{ groups_page }}">
+                        <input type="hidden" name="groups_per_page" value="{{ groups_per_page }}">
+                        <input type="hidden" name="metas_page" value="{{ metas_page }}">
+                        <input type="hidden" name="metas_per_page" value="{{ metas_per_page }}">
+                        <input type="hidden" name="codes_page" value="1">
+                        <label class="tight-label">페이지당
+                            <select name="codes_per_page" onchange="this.form.submit()">
+                                <option value="20" {% if codes_per_page == 20 %}selected{% endif %}>20</option>
+                                <option value="50" {% if codes_per_page == 50 %}selected{% endif %}>50</option>
+                                <option value="100" {% if codes_per_page == 100 %}selected{% endif %}>100</option>
+                            </select>
+                        </label>
+                    </form>
+                </div>
+                <div class="list-card-header-right">
+                    <button type="button" class="toolbar-btn" id="admin-code-add" title="선택한 첫 행을 참고해 하단에 빈 행 추가. 선택 없으면 기본값.">추가</button>
+                    <button type="button" class="toolbar-btn" id="admin-code-save" title="선택된 행만 저장">저장</button>
+                    <button type="button" class="toolbar-btn danger-outline" id="admin-code-delete" title="선택된 행만 삭제">삭제</button>
+                </div>
+            </div>
+            <form method="post" action="/admin/codes/batch-update" id="admin-code-batch-form" accept-charset="UTF-8">
+                <input type="hidden" name="entity" value="{{ entity }}">
+                <input type="hidden" name="groups_page" value="{{ groups_page }}">
+                <input type="hidden" name="groups_per_page" value="{{ groups_per_page }}">
+                <input type="hidden" name="codes_page" value="{{ codes_page }}">
+                <input type="hidden" name="codes_per_page" value="{{ codes_per_page }}">
+                <input type="hidden" name="metas_page" value="{{ metas_page }}">
+                <input type="hidden" name="metas_per_page" value="{{ metas_per_page }}">
+                <div class="table-scroll">
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th class="col-check"><input type="checkbox" id="code-select-all" title="전체 선택" aria-label="전체 선택"></th>
+                                <th class="col-check" title="사용 여부">사용</th>
+                                <th class="col-id" title="소속 코드 그룹(FK → code_groups.id)">group_id</th>
+                                <th class="col-id" title="코드 행 PK">id</th>
+                                <th>code</th>
+                                <th>label</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-code-tbody">
+                            {% for c in codes %}
+                            <tr data-db-id="{{ c.id }}" data-is-new="0">
+                                <td class="col-check">
+                                    <input type="checkbox" class="code-row-select" name="selected_rows" value="{{ c.id }}" aria-label="선택">
+                                </td>
+                                <td class="col-check">
+                                    <input type="checkbox" class="cell-input" name="code_{{ c.id }}_is_active" value="true" {% if c.is_active %}checked{% endif %} aria-label="사용">
+                                </td>
+                                <td>
+                                    <select class="cell-input" name="code_{{ c.id }}_group_id">
+                                        {% for g in code_detail_groups %}
+                                        <option value="{{ g.id }}" {% if c.group_id == g.id %}selected{% endif %}>{{ g.name }} ({{ g.id }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="col-id">{{ c.id }}</td>
+                                <td><input class="cell-input" type="text" name="code_{{ c.id }}_code" value="{{ c.code }}"></td>
+                                <td><input class="cell-input" type="text" name="code_{{ c.id }}_label" value="{{ c.label }}"></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <nav class="pager-bar pager-bar--bottom pager-nav" aria-label="코드 목록 페이지">
+                    {% if codes_pager_prev %}
+                    <a class="pager-link" href="{{ codes_pager_prev }}">이전</a>
+                    {% endif %}
+                    <div class="pager-pages">
+                        {% for item in codes_pager_items %}
+                        {% if item.kind == 'gap' %}
+                        <span class="pager-gap" aria-hidden="true">…</span>
+                        {% else %}
+                        <a href="{{ item.url }}" class="pager-num{% if item.current %} is-current{% endif %}">{{ item.num }}</a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="pager-info">{{ codes_page }} / {{ total_codes_pages }} (총 {{ total_codes }}건)</span>
+                    {% if codes_pager_next %}
+                    <a class="pager-link" href="{{ codes_pager_next }}">다음</a>
+                    {% endif %}
+                </nav>
+                <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">codes-submit</button>
+            </form>
+            <div class="list-card-footer">
+                <div></div>
+                <div class="list-card-footer-right">
+                    <span class="muted small">엑셀 Import/Export는 시스템·담당자·자산 관리 탭에서 사용하세요.</span>
+                </div>
+            </div>
+        </section>
+        {% else %}
+        <section class="card list-card admin-panel-card">
+            <div class="list-card-header">
+                <div class="list-card-header-left">
+                    <span class="depth-part">{{ entity_label }} · 필드 메타</span>
+                    <form method="get" action="/admin" class="inline-form tight">
+                        <input type="hidden" name="panel" value="entity">
+                        <input type="hidden" name="entity" value="{{ entity }}">
+                        <input type="hidden" name="groups_page" value="{{ groups_page }}">
+                        <input type="hidden" name="groups_per_page" value="{{ groups_per_page }}">
+                        <input type="hidden" name="codes_page" value="{{ codes_page }}">
+                        <input type="hidden" name="codes_per_page" value="{{ codes_per_page }}">
+                        <input type="hidden" name="metas_page" value="{{ metas_page }}">
+                        <label class="tight-label">페이지당
+                            <select name="metas_per_page" onchange="this.form.submit()">
+                                <option value="20" {% if metas_per_page == 20 %}selected{% endif %}>20</option>
+                                <option value="50" {% if metas_per_page == 50 %}selected{% endif %}>50</option>
+                                <option value="100" {% if metas_per_page == 100 %}selected{% endif %}>100</option>
+                            </select>
+                        </label>
+                    </form>
+                </div>
+                <div class="list-card-header-right">
+                    <button type="button" class="toolbar-btn" id="admin-meta-add" title="선택한 첫 행 값을 복사해 하단에 행 추가(field_key 자동). 선택 없으면 빈 행.">추가</button>
+                    <button type="submit" class="toolbar-btn" form="admin-meta-batch-form" id="admin-meta-save" title="선택된 행만 저장">저장</button>
+                    <button type="button" class="toolbar-btn danger-outline" id="admin-meta-delete" title="선택된 행만 삭제">삭제</button>
+                </div>
+            </div>
+            <form method="post" action="/admin/field-meta/batch-update" id="admin-meta-batch-form">
+                <input type="hidden" name="entity" value="{{ entity }}">
+                <input type="hidden" name="groups_page" value="{{ groups_page }}">
+                <input type="hidden" name="groups_per_page" value="{{ groups_per_page }}">
+                <input type="hidden" name="codes_page" value="{{ codes_page }}">
+                <input type="hidden" name="codes_per_page" value="{{ codes_per_page }}">
+                <input type="hidden" name="metas_page" value="{{ metas_page }}">
+                <input type="hidden" name="metas_per_page" value="{{ metas_per_page }}">
+                <div class="table-scroll">
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th class="col-check"><input type="checkbox" id="meta-select-all" title="전체 선택" aria-label="전체 선택"></th>
+                                <th class="col-check" title="체크: 사용(다른 화면에 표시). 해제: 미사용(다른 화면에서 숨김)">사용</th>
+                                <th>field_key</th>
+                                <th>display_name</th>
+                                <th>type</th>
+                                <th>code_group_id</th>
+                                <th>allow_null</th>
+                                <th>max_length</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-meta-tbody">
+                            {% for m in metas %}
+                            <tr data-field-key="{{ m.field_key }}" data-db-id="{{ m.id }}" data-is-new="0">
+                                <td class="col-check">
+                                    <input type="checkbox" class="meta-row-select" name="selected_rows" value="{{ m.id }}" aria-label="선택">
+                                </td>
+                                <td class="col-check">
+                                    <input type="checkbox" class="cell-input" name="meta_{{ m.id }}_in_use" value="true" {% if m.in_use %}checked{% endif %} aria-label="필드 사용">
+                                </td>
+                                <td class="cell-text">{{ m.field_key }}</td>
+                                <td><input class="cell-input" type="text" name="meta_{{ m.id }}_display_name" value="{{ m.display_name }}"></td>
+                                <td>
+                                    <select class="cell-input meta-field-type-select" name="meta_{{ m.id }}_field_type">
+                                        <option value="text" {% if (m.field_type or 'text') == 'text' %}selected{% endif %}>text</option>
+                                        <option value="date" {% if (m.field_type or '') == 'date' %}selected{% endif %}>date</option>
+                                        <option value="code" {% if (m.field_type or '') == 'code' %}selected{% endif %}>code</option>
+                                    </select>
+                                </td>
+                                <td class="meta-cg-wrap">
+                                    <input type="hidden" class="meta-cg-hidden" name="meta_{{ m.id }}_code_group_id" value="{% if (m.field_type or 'text')|lower == 'code' and m.code_group_id %}{{ m.code_group_id }}{% endif %}">
+                                    <span class="cell-text muted meta-cg-label"{% if (m.field_type or 'text')|lower == 'code' %} style="display:none"{% endif %}>none</span>
+                                    <select class="cell-input meta-cg-select"{% if (m.field_type or 'text')|lower != 'code' %} style="display:none" disabled{% endif %}>
+                                        <option value="">None</option>
+                                        {% for g in groups %}
+                                        <option value="{{ g.id }}" {% if m.code_group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="cell-input" name="meta_{{ m.id }}_allow_null">
+                                        <option value="true" {% if m.allow_null %}selected{% endif %}>true</option>
+                                        <option value="false" {% if not m.allow_null %}selected{% endif %}>false</option>
+                                    </select>
+                                </td>
+                                <td><input class="cell-input" type="number" name="meta_{{ m.id }}_max_length" min="1" max="255" value="{{ m.max_length }}"></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <nav class="pager-bar pager-bar--bottom pager-nav" aria-label="필드 메타 페이지">
+                    {% if metas_pager_prev %}
+                    <a class="pager-link" href="{{ metas_pager_prev }}">이전</a>
+                    {% endif %}
+                    <div class="pager-pages">
+                        {% for item in metas_pager_items %}
+                        {% if item.kind == 'gap' %}
+                        <span class="pager-gap" aria-hidden="true">…</span>
+                        {% else %}
+                        <a href="{{ item.url }}" class="pager-num{% if item.current %} is-current{% endif %}">{{ item.num }}</a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="pager-info">{{ metas_page }} / {{ total_metas_pages }} (총 {{ total_metas }}건)</span>
+                    {% if metas_pager_next %}
+                    <a class="pager-link" href="{{ metas_pager_next }}">다음</a>
+                    {% endif %}
+                </nav>
+            </form>
+            <div class="list-card-footer">
+                <div></div>
+                <div class="list-card-footer-right">
+                    <span class="muted small">엑셀 Import/Export는 시스템·담당자·자산 관리 탭에서 사용하세요.</span>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function () {
+    function wireAdminListAutoSelect(tbody, rowSelectSelector, selectAllId) {
+        if (!tbody) return;
+        function mark(e) {
+            const t = e.target;
+            if (!t || !t.closest) return;
+            if (t.matches(rowSelectSelector)) return;
+            if (selectAllId && t.id === selectAllId) return;
+            const tr = t.closest("tr");
+            if (!tr || !tbody.contains(tr)) return;
+            const sel = tr.querySelector(rowSelectSelector);
+            if (sel) sel.checked = true;
+        }
+        tbody.addEventListener("input", mark);
+        tbody.addEventListener("change", mark);
+    }
+    wireAdminListAutoSelect(document.getElementById("admin-group-tbody"), ".group-row-select", "group-select-all");
+    wireAdminListAutoSelect(document.getElementById("admin-code-tbody"), ".code-row-select", "code-select-all");
+    wireAdminListAutoSelect(document.getElementById("admin-meta-tbody"), ".meta-row-select", "meta-select-all");
+})();
+(function () {
+    const cfgEl = document.getElementById("admin-page-config");
+    const groupTbody = document.getElementById("admin-group-tbody");
+    const groupForm = document.getElementById("admin-group-batch-form");
+    const groupAdd = document.getElementById("admin-group-add");
+    const groupDel = document.getElementById("admin-group-delete");
+    if (cfgEl && groupTbody && groupForm && groupAdd && groupDel) {
+        let groupNewSeq = 0;
+
+        function appendGroupDraftRow() {
+            const selectedTrs = [...groupTbody.querySelectorAll(".group-row-select:checked")].map((cb) => cb.closest("tr")).filter(Boolean);
+            const token = "n" + String(Date.now()) + String(groupNewSeq++);
+            let nameVal = "";
+            let useActive = true;
+            const src = selectedTrs.length ? selectedTrs[0] : null;
+            if (src && src.dataset.isNew !== "1" && src.dataset.dbId) {
+                const sid = src.dataset.dbId;
+                const elN = groupForm.querySelector(`[name="group_${sid}_name"]`);
+                const elU = groupForm.querySelector(`[name="group_${sid}_is_active"]`);
+                if (elN) nameVal = elN.value || "";
+                if (elU) useActive = elU.checked;
+            } else if (src && src.dataset.rowToken) {
+                const t = src.dataset.rowToken;
+                const elN = groupForm.querySelector(`[name="group_${t}_name"]`);
+                const elU = groupForm.querySelector(`[name="group_${t}_is_active"]`);
+                if (elN) nameVal = elN.value || "";
+                if (elU) useActive = elU.checked;
+            }
+            const tr = document.createElement("tr");
+            tr.dataset.isNew = "1";
+            tr.dataset.rowToken = token;
+
+            const tdSel = document.createElement("td");
+            tdSel.className = "col-check";
+            const cbSel = document.createElement("input");
+            cbSel.type = "checkbox";
+            cbSel.name = "selected_rows";
+            cbSel.value = token;
+            cbSel.className = "group-row-select";
+            cbSel.setAttribute("aria-label", "선택");
+            tdSel.appendChild(cbSel);
+
+            const tdUse = document.createElement("td");
+            tdUse.className = "col-check";
+            const cbUse = document.createElement("input");
+            cbUse.type = "checkbox";
+            cbUse.name = "group_" + token + "_is_active";
+            cbUse.value = "true";
+            cbUse.checked = useActive;
+            cbUse.className = "cell-input";
+            cbUse.setAttribute("aria-label", "사용");
+            tdUse.appendChild(cbUse);
+
+            const tdGid = document.createElement("td");
+            tdGid.className = "col-id muted cell-text";
+            tdGid.textContent = "—";
+
+            const tdCgid = document.createElement("td");
+            tdCgid.className = "col-id col-cgid muted cell-text";
+            tdCgid.textContent = "—";
+
+            const tdName = document.createElement("td");
+            const inp = document.createElement("input");
+            inp.type = "text";
+            inp.name = "group_" + token + "_name";
+            inp.className = "cell-input";
+            inp.value = nameVal;
+            inp.required = true;
+            tdName.appendChild(inp);
+
+            tr.appendChild(tdSel);
+            tr.appendChild(tdUse);
+            tr.appendChild(tdGid);
+            tr.appendChild(tdCgid);
+            tr.appendChild(tdName);
+            groupTbody.appendChild(tr);
+            tr.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+
+        groupAdd.addEventListener("click", appendGroupDraftRow);
+
+        const groupSaveBtn = document.getElementById("admin-group-save");
+        if (groupSaveBtn) {
+            groupSaveBtn.addEventListener("click", () => {
+                const n = groupTbody.querySelectorAll(".group-row-select:checked").length;
+                if (!n) {
+                    alert("저장할 코드 그룹 행을 선택하세요.");
+                    return;
+                }
+                groupForm.requestSubmit();
+            });
+        }
+
+        groupForm.addEventListener("submit", (e) => {
+            const n = groupTbody.querySelectorAll(".group-row-select:checked").length;
+            if (!n) {
+                e.preventDefault();
+                alert("저장할 코드 그룹 행을 선택하세요.");
+            }
+        });
+
+        const groupSelAll = document.getElementById("group-select-all");
+        if (groupSelAll) {
+            groupSelAll.addEventListener("change", (e) => {
+                groupTbody.querySelectorAll(".group-row-select").forEach((cb) => {
+                    cb.checked = e.target.checked;
+                });
+            });
+        }
+
+        groupDel.addEventListener("click", async () => {
+            const checked = [...groupTbody.querySelectorAll(".group-row-select:checked")];
+            if (!checked.length) {
+                alert("삭제할 코드 그룹을 선택하세요.");
+                return;
+            }
+            if (!confirm("선택한 코드 그룹과 그에 속한 코드가 삭제됩니다. 필드 메타의 code 참조는 해제될 수 있습니다. 계속할까요?")) return;
+            const intIds = [];
+            for (const cb of checked) {
+                const tr = cb.closest("tr");
+                if (tr && tr.dataset.isNew === "1") tr.remove();
+                else if (tr && tr.dataset.dbId) intIds.push(parseInt(tr.dataset.dbId, 10));
+            }
+            if (!intIds.length) return;
+            const fd = new FormData();
+            ["entity", "groups_page", "groups_per_page", "codes_page", "codes_per_page", "metas_page", "metas_per_page"].forEach((name) => {
+                const el = groupForm.querySelector(`input[name="${name}"]`);
+                if (el) fd.append(name, el.value);
+            });
+            intIds.forEach((id) => fd.append("selected_rows", String(id)));
+            const r = await fetch("/admin/groups/batch-delete", { method: "POST", body: fd, credentials: "same-origin" });
+            if (r.ok) window.location.reload();
+            else alert("삭제 요청이 실패했습니다. 상태 코드: " + r.status);
+        });
+    }
+})();
+(function () {
+    const cfgEl = document.getElementById("admin-page-config");
+    const codeTbody = document.getElementById("admin-code-tbody");
+    const codeForm = document.getElementById("admin-code-batch-form");
+    const codeAdd = document.getElementById("admin-code-add");
+    const codeDel = document.getElementById("admin-code-delete");
+    if (cfgEl && codeTbody && codeForm && codeAdd && codeDel) {
+        const config = JSON.parse(cfgEl.textContent);
+        let codeNewSeq = 0;
+
+        function mkSelect(name, pairs, selectedVal) {
+            const sel = document.createElement("select");
+            sel.className = "cell-input";
+            sel.name = name;
+            pairs.forEach(([val, label]) => {
+                const o = document.createElement("option");
+                o.value = val;
+                o.textContent = label;
+                if (String(val) === String(selectedVal)) o.selected = true;
+                sel.appendChild(o);
+            });
+            return sel;
+        }
+
+        function appendCodeDraftRow() {
+            const selectedTrs = [...codeTbody.querySelectorAll(".code-row-select:checked")].map((cb) => cb.closest("tr")).filter(Boolean);
+            const token = "n" + String(Date.now()) + String(codeNewSeq++);
+            const defaultGid = config.groups.length ? String(config.groups[0].id) : "";
+            let gid = defaultGid;
+            let codeVal = "";
+            let labelVal = "";
+            let active = true;
+            const src = selectedTrs.length ? selectedTrs[0] : null;
+            if (src && src.dataset.isNew !== "1" && src.dataset.dbId) {
+                const sid = src.dataset.dbId;
+                const elG = codeForm.querySelector(`[name="code_${sid}_group_id"]`);
+                const elC = codeForm.querySelector(`[name="code_${sid}_code"]`);
+                const elL = codeForm.querySelector(`[name="code_${sid}_label"]`);
+                const elA = codeForm.querySelector(`[name="code_${sid}_is_active"]`);
+                if (elG) gid = elG.value || defaultGid;
+                if (elC) codeVal = elC.value || "";
+                if (elL) labelVal = elL.value || "";
+                if (elA) active = elA.checked;
+            } else if (src && src.dataset.rowToken) {
+                const t = src.dataset.rowToken;
+                const elG = codeForm.querySelector(`[name="code_${t}_group_id"]`);
+                const elC = codeForm.querySelector(`[name="code_${t}_code"]`);
+                const elL = codeForm.querySelector(`[name="code_${t}_label"]`);
+                const elA = codeForm.querySelector(`[name="code_${t}_is_active"]`);
+                if (elG) gid = elG.value || defaultGid;
+                if (elC) codeVal = elC.value || "";
+                if (elL) labelVal = elL.value || "";
+                if (elA) active = elA.checked;
+            }
+            const tr = document.createElement("tr");
+            tr.dataset.isNew = "1";
+            tr.dataset.rowToken = token;
+
+            const tdSel = document.createElement("td");
+            tdSel.className = "col-check";
+            const cbSel = document.createElement("input");
+            cbSel.type = "checkbox";
+            cbSel.name = "selected_rows";
+            cbSel.value = token;
+            cbSel.className = "code-row-select";
+            cbSel.setAttribute("aria-label", "선택");
+            tdSel.appendChild(cbSel);
+
+            const tdUse = document.createElement("td");
+            tdUse.className = "col-check";
+            const cbUse = document.createElement("input");
+            cbUse.type = "checkbox";
+            cbUse.name = "code_" + token + "_is_active";
+            cbUse.value = "true";
+            cbUse.checked = active;
+            cbUse.className = "cell-input";
+            cbUse.setAttribute("aria-label", "사용");
+            tdUse.appendChild(cbUse);
+
+            const tdGrp = document.createElement("td");
+            const cgPairs = config.groups.map((g) => [String(g.id), `${g.name} (${g.id})`]);
+            tdGrp.appendChild(mkSelect("code_" + token + "_group_id", cgPairs, gid));
+
+            const tdId = document.createElement("td");
+            tdId.className = "col-id muted";
+            tdId.textContent = "—";
+
+            const tdCode = document.createElement("td");
+            const inpC = document.createElement("input");
+            inpC.type = "text";
+            inpC.name = "code_" + token + "_code";
+            inpC.className = "cell-input";
+            inpC.value = codeVal;
+            tdCode.appendChild(inpC);
+
+            const tdLab = document.createElement("td");
+            const inpL = document.createElement("input");
+            inpL.type = "text";
+            inpL.name = "code_" + token + "_label";
+            inpL.className = "cell-input";
+            inpL.value = labelVal;
+            tdLab.appendChild(inpL);
+
+            tr.appendChild(tdSel);
+            tr.appendChild(tdUse);
+            tr.appendChild(tdGrp);
+            tr.appendChild(tdId);
+            tr.appendChild(tdCode);
+            tr.appendChild(tdLab);
+            codeTbody.appendChild(tr);
+            tr.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+
+        codeAdd.addEventListener("click", appendCodeDraftRow);
+
+        const codeSaveBtn = document.getElementById("admin-code-save");
+        if (codeSaveBtn) {
+            codeSaveBtn.addEventListener("click", () => {
+                const n = codeTbody.querySelectorAll(".code-row-select:checked").length;
+                if (!n) {
+                    alert("저장할 코드 행을 선택하세요.");
+                    return;
+                }
+                codeForm.requestSubmit();
+            });
+        }
+
+        codeForm.addEventListener("submit", (e) => {
+            const n = codeTbody.querySelectorAll(".code-row-select:checked").length;
+            if (!n) {
+                e.preventDefault();
+                alert("저장할 코드 행을 선택하세요.");
+            }
+        });
+
+        const codeSelAll = document.getElementById("code-select-all");
+        if (codeSelAll) {
+            codeSelAll.addEventListener("change", (e) => {
+                codeTbody.querySelectorAll(".code-row-select").forEach((cb) => {
+                    cb.checked = e.target.checked;
+                });
+            });
+        }
+
+        codeDel.addEventListener("click", async () => {
+            const checked = [...codeTbody.querySelectorAll(".code-row-select:checked")];
+            if (!checked.length) {
+                alert("삭제할 코드를 선택하세요.");
+                return;
+            }
+            if (!confirm("선택한 코드를 삭제합니다. 계속할까요?")) return;
+            const intIds = [];
+            for (const cb of checked) {
+                const tr = cb.closest("tr");
+                if (tr && tr.dataset.isNew === "1") tr.remove();
+                else if (tr && tr.dataset.dbId) intIds.push(parseInt(tr.dataset.dbId, 10));
+            }
+            if (!intIds.length) return;
+            const fd = new FormData();
+            ["entity", "groups_page", "groups_per_page", "codes_page", "codes_per_page", "metas_page", "metas_per_page"].forEach((name) => {
+                const el = codeForm.querySelector(`input[name="${name}"]`);
+                if (el) fd.append(name, el.value);
+            });
+            intIds.forEach((id) => fd.append("selected_rows", String(id)));
+            const r = await fetch("/admin/codes/batch-delete", { method: "POST", body: fd, credentials: "same-origin" });
+            if (r.ok) window.location.reload();
+            else alert("삭제 요청이 실패했습니다. 상태 코드: " + r.status);
+        });
+    }
+})();
+(function () {
+    const cfgEl = document.getElementById("admin-page-config");
+    const tbody = document.getElementById("admin-meta-tbody");
+    const form = document.getElementById("admin-meta-batch-form");
+    const addBtn = document.getElementById("admin-meta-add");
+    const delBtn = document.getElementById("admin-meta-delete");
+    if (!cfgEl || !tbody || !form || !addBtn || !delBtn) return;
+
+    const config = JSON.parse(cfgEl.textContent);
+    let newRowSeq = 0;
+
+    function syncMetaCgRow(tr) {
+        if (!tr) return;
+        const typeSel = tr.querySelector('select[name$="_field_type"]');
+        const cgSel = tr.querySelector(".meta-cg-select");
+        const hidden = tr.querySelector(".meta-cg-hidden");
+        const label = tr.querySelector(".meta-cg-label");
+        if (!typeSel || !cgSel || !hidden) return;
+        const isCode = (typeSel.value || "").toLowerCase() === "code";
+        if (label) label.style.display = isCode ? "none" : "";
+        cgSel.style.display = isCode ? "" : "none";
+        cgSel.disabled = !isCode;
+        if (!isCode) {
+            cgSel.value = "";
+            hidden.value = "";
+        } else {
+            if (hidden.value) {
+                const has = Array.from(cgSel.options).some((o) => o.value === hidden.value);
+                if (has) cgSel.value = hidden.value;
+            }
+            hidden.value = cgSel.value || "";
+        }
+    }
+
+    form.addEventListener("change", (e) => {
+        const t = e.target;
+        if (t && t.matches && t.matches('select[name$="_field_type"]')) {
+            syncMetaCgRow(t.closest("tr"));
+        }
+        if (t && t.matches && t.matches(".meta-cg-select") && !t.disabled) {
+            const tr = t.closest("tr");
+            const h = tr && tr.querySelector(".meta-cg-hidden");
+            if (h) h.value = t.value || "";
+        }
+    });
+
+    tbody.querySelectorAll("tr").forEach((tr) => syncMetaCgRow(tr));
+
+    function usedFieldKeys() {
+        const used = new Set();
+        tbody.querySelectorAll("tr[data-field-key]").forEach((tr) => {
+            used.add(String(tr.dataset.fieldKey || "").toUpperCase());
+        });
+        return used;
+    }
+
+    function nextFreeFieldKey() {
+        const Et = String(config.entity).toUpperCase();
+        const slotCount = Math.max(1, Math.min(99, Number(config.entity_field_slot_count) || 20));
+        const used = usedFieldKeys();
+        for (let d = 0; d < slotCount; d++) {
+            const fk = Et + String(d).padStart(2, "0");
+            if (!used.has(fk)) return fk;
+        }
+        return null;
+    }
+
+    function mkSelect(name, pairs, selectedVal) {
+        const sel = document.createElement("select");
+        sel.className = "cell-input";
+        sel.name = name;
+        pairs.forEach(([val, label]) => {
+            const o = document.createElement("option");
+            o.value = val;
+            o.textContent = label;
+            if (String(val) === String(selectedVal)) o.selected = true;
+            sel.appendChild(o);
+        });
+        return sel;
+    }
+
+    function appendDraftRow() {
+        const selectedTrs = [...tbody.querySelectorAll(".meta-row-select:checked")].map((cb) => cb.closest("tr")).filter(Boolean);
+        const fk = nextFreeFieldKey();
+        if (!fk) {
+            const Et = String(config.entity).toUpperCase();
+            const slotCount = Math.max(1, Math.min(99, Number(config.entity_field_slot_count) || 20));
+            alert(Et + "00~" + Et + String(slotCount - 1).padStart(2, "0") + " 슬롯이 모두 사용 중입니다.");
+            return;
+        }
+        const token = "n" + String(Date.now()) + String(newRowSeq++);
+        const src = selectedTrs.length ? selectedTrs[0] : null;
+        let dn = "";
+        let fieldType = "text";
+        let cg = "";
+        let an = "true";
+        let ml = "255";
+        let iu = true;
+        if (src && src.dataset.isNew !== "1" && src.dataset.dbId) {
+            const sid = src.dataset.dbId;
+            const elDn = form.querySelector(`[name="meta_${sid}_display_name"]`);
+            const elFt = form.querySelector(`[name="meta_${sid}_field_type"]`);
+            const elCg = form.querySelector(`[name="meta_${sid}_code_group_id"]`);
+            const elAn = form.querySelector(`[name="meta_${sid}_allow_null"]`);
+            const elMl = form.querySelector(`[name="meta_${sid}_max_length"]`);
+            const elIu = form.querySelector(`[name="meta_${sid}_in_use"]`);
+            if (elDn) dn = elDn.value || "";
+            if (elFt) fieldType = elFt.value || "text";
+            if (elCg) cg = elCg.value || "";
+            if (elAn) an = elAn.value || "true";
+            if (elMl) ml = elMl.value || "255";
+            if (elIu) iu = elIu.checked;
+        } else if (src && src.dataset.rowToken) {
+            const t = src.dataset.rowToken;
+            const elDn = form.querySelector(`[name="meta_${t}_display_name"]`);
+            const elFt = form.querySelector(`[name="meta_${t}_field_type"]`);
+            const elCg = form.querySelector(`[name="meta_${t}_code_group_id"]`);
+            const elAn = form.querySelector(`[name="meta_${t}_allow_null"]`);
+            const elMl = form.querySelector(`[name="meta_${t}_max_length"]`);
+            const elIu = form.querySelector(`[name="meta_${t}_in_use"]`);
+            if (elDn) dn = elDn.value || "";
+            if (elFt) fieldType = elFt.value || "text";
+            if (elCg) cg = elCg.value || "";
+            if (elAn) an = elAn.value || "true";
+            if (elMl) ml = elMl.value || "255";
+            if (elIu) iu = elIu.checked;
+        }
+        const tr = document.createElement("tr");
+        tr.dataset.fieldKey = fk;
+        tr.dataset.isNew = "1";
+        tr.dataset.rowToken = token;
+
+        const tdSel = document.createElement("td");
+        tdSel.className = "col-check";
+        const cbSel = document.createElement("input");
+        cbSel.type = "checkbox";
+        cbSel.name = "selected_rows";
+        cbSel.value = token;
+        cbSel.className = "meta-row-select";
+        cbSel.setAttribute("aria-label", "선택");
+        tdSel.appendChild(cbSel);
+
+        const tdUse = document.createElement("td");
+        tdUse.className = "col-check";
+        const cbUse = document.createElement("input");
+        cbUse.type = "checkbox";
+        cbUse.name = "meta_" + token + "_in_use";
+        cbUse.value = "true";
+        cbUse.checked = iu;
+        cbUse.className = "cell-input";
+        cbUse.setAttribute("aria-label", "필드 사용");
+        tdUse.appendChild(cbUse);
+
+        const tdFk = document.createElement("td");
+        tdFk.className = "cell-text";
+        tdFk.appendChild(document.createTextNode(fk));
+        const hid = document.createElement("input");
+        hid.type = "hidden";
+        hid.name = "meta_" + token + "_field_key";
+        hid.value = fk;
+        tdFk.appendChild(hid);
+
+        const tdDn = document.createElement("td");
+        const inpDn = document.createElement("input");
+        inpDn.type = "text";
+        inpDn.name = "meta_" + token + "_display_name";
+        inpDn.className = "cell-input";
+        inpDn.value = dn;
+        tdDn.appendChild(inpDn);
+
+        const tdIc = document.createElement("td");
+        const ftEl = mkSelect(
+            "meta_" + token + "_field_type",
+            [
+                ["text", "text"],
+                ["date", "date"],
+                ["code", "code"],
+            ],
+            fieldType
+        );
+        ftEl.classList.add("meta-field-type-select");
+        tdIc.appendChild(ftEl);
+
+        const tdCg = document.createElement("td");
+        tdCg.className = "meta-cg-wrap";
+        const hidCg = document.createElement("input");
+        hidCg.type = "hidden";
+        hidCg.className = "meta-cg-hidden";
+        hidCg.name = "meta_" + token + "_code_group_id";
+        const labCg = document.createElement("span");
+        labCg.className = "cell-text muted meta-cg-label";
+        labCg.textContent = "none";
+        const cgSel = document.createElement("select");
+        cgSel.className = "cell-input meta-cg-select";
+        const cgPairs = [["", "None"]].concat(config.groups.map((g) => [String(g.id), g.name]));
+        cgPairs.forEach(([val, label]) => {
+            const o = document.createElement("option");
+            o.value = val;
+            o.textContent = label;
+            if (String(val) === String(cg)) o.selected = true;
+            cgSel.appendChild(o);
+        });
+        hidCg.value = fieldType === "code" && cg ? String(cg) : "";
+        tdCg.appendChild(hidCg);
+        tdCg.appendChild(labCg);
+        tdCg.appendChild(cgSel);
+
+        const tdAn = document.createElement("td");
+        tdAn.appendChild(
+            mkSelect(
+                "meta_" + token + "_allow_null",
+                [
+                    ["true", "true"],
+                    ["false", "false"],
+                ],
+                an
+            )
+        );
+
+        const tdMl = document.createElement("td");
+        const inpMl = document.createElement("input");
+        inpMl.type = "number";
+        inpMl.name = "meta_" + token + "_max_length";
+        inpMl.className = "cell-input";
+        inpMl.min = "1";
+        inpMl.max = "255";
+        inpMl.value = ml;
+        tdMl.appendChild(inpMl);
+
+        tr.appendChild(tdSel);
+        tr.appendChild(tdUse);
+        tr.appendChild(tdFk);
+        tr.appendChild(tdDn);
+        tr.appendChild(tdIc);
+        tr.appendChild(tdCg);
+        tr.appendChild(tdAn);
+        tr.appendChild(tdMl);
+        tbody.appendChild(tr);
+        syncMetaCgRow(tr);
+        tr.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+
+    addBtn.addEventListener("click", appendDraftRow);
+
+    form.addEventListener("submit", (e) => {
+        tbody.querySelectorAll("tr").forEach((tr) => syncMetaCgRow(tr));
+        const n = tbody.querySelectorAll(".meta-row-select:checked").length;
+        if (!n) {
+            e.preventDefault();
+            alert("저장할 행을 선택하세요.");
+        }
+    });
+
+    const metaSelAll = document.getElementById("meta-select-all");
+    if (metaSelAll) {
+        metaSelAll.addEventListener("change", (e) => {
+            tbody.querySelectorAll(".meta-row-select").forEach((cb) => {
+                cb.checked = e.target.checked;
+            });
+        });
+    }
+
+    delBtn.addEventListener("click", async () => {
+        const checked = [...tbody.querySelectorAll(".meta-row-select:checked")];
+        if (!checked.length) {
+            alert("삭제할 필드 메타를 선택하세요.");
+            return;
+        }
+        if (!confirm("선택한 필드 메타를 삭제합니다. 계속할까요?")) return;
+        const intIds = [];
+        for (const cb of checked) {
+            const tr = cb.closest("tr");
+            if (tr && tr.dataset.isNew === "1") tr.remove();
+            else if (tr && tr.dataset.dbId) intIds.push(parseInt(tr.dataset.dbId, 10));
+        }
+        if (!intIds.length) return;
+        const fd = new FormData();
+        ["entity", "groups_page", "groups_per_page", "codes_page", "codes_per_page", "metas_page", "metas_per_page"].forEach((name) => {
+            const el = form.querySelector(`input[name="${name}"]`);
+            if (el) fd.append(name, el.value);
+        });
+        intIds.forEach((id) => fd.append("selected_rows", String(id)));
+        const r = await fetch("/admin/field-meta/batch-delete", { method: "POST", body: fd, credentials: "same-origin" });
+        if (r.ok) window.location.reload();
+        else alert("삭제 요청이 실패했습니다. 상태 코드: " + r.status);
+    });
+})();
+</script>
+{% endblock %}
